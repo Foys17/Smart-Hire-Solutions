@@ -3,3 +3,6 @@ djangorestframework
 djangorestframework-simplejwt 
 itsdangerous
 psycopg2-binary
+gliner 
+sentence-transformers 
+pymupdf
