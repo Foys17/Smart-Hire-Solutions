@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Ranking for Job: <span class="text-primary">{{ job.title }}</span></h2>
+        <a href="{% url 'web_test:job_list' %}" class="btn btn-outline-secondary">Back to Jobs</a>
+    </div>
+
+    <div class="mb-3">
+        <div class="btn-group" role="group">
+            <a href="?" class="btn btn-outline-dark {% if not request.GET.ref %}active{% endif %}">Show All</a>
+            <a href="?ref=true" class="btn btn-outline-dark {% if request.GET.ref %}active{% endif %}">With References Only</a>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Rank</th>
+                        <th>AI Score</th>
+                        <th>Candidate Name</th>
+                        <th>Top Skills Detected</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr {% if app.match_score > 80 %}class="table-success"{% endif %}>
+                        <td class="align-middle fw-bold">{{ forloop.counter }}</td>
+
+                        <td class="align-middle">
+                            {% if app.match_score > 75 %}
+                                <span class="badge bg-success fs-6">{{ app.match_score }}%</span>
+                            {% elif app.match_score > 50 %}
+                                <span class="badge bg-warning text-dark fs-6">{{ app.match_score }}%</span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6">{{ app.match_score }}%</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="align-middle">
+                            <strong>{{ app.candidate.full_name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ app.candidate.email }}</small>
+                            {% if app.has_reference %}
+                                <span class="badge bg-primary ms-2" title="Referred by {{ app.reference_name }}">Reference</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="align-middle">
+                            {% for item in app.extracted_data|slice:":5" %} 
+                                {# Only showing first 5 tags to keep table clean #}
+                                {% if item.label in 'Skill,Technology,Framework,Programming Language' %}
+                                    <span class="badge bg-secondary mb-1">{{ item.text }}</span>
+                                {% endif %}
+                            {% empty %}
+                                <span class="text-muted small">No specific skills detected.</span>
+                            {% endfor %}
+                            {% if app.extracted_data|length > 5 %}
+                                <small class="text-muted">...</small>
+                            {% endif %}
+                        </td>
+
+                        <td class="align-middle">
+                            <span class="badge border border-secondary text-secondary">{{ app.status }}</span>
+                        </td>
+
+                        <td class="align-middle">
+                            <a href="{% url 'web_test:application_detail' app.id %}" class="btn btn-sm btn-info text-white">
+                                🔍 Analyze Report
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            No applications received yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

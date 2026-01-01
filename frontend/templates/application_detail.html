@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Application Analysis</h2>
+            <h4 class="text-muted">{{ app.candidate.full_name }}</h4>
+            <p>Applied for: <strong>{{ app.job.title }}</strong></p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">AI Match Score</h6>
+                    <h1 class="display-4 {% if app.match_score > 75 %}text-success{% elif app.match_score > 50 %}text-warning{% else %}text-danger{% endif %}">
+                        {{ app.match_score }}%
+                    </h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">🤖 What the AI Found</h5>
+                </div>
+                <div class="card-body">
+                    
+                    <h6 class="mt-3"><i class="bi bi-code-slash"></i> Skills & Tech</h6>
+                    <div>
+                        {% for item in app.extracted_data %}
+                            {% if item.label in 'Skill,Technology,Framework,Programming Language,Software,Tool' %}
+                                <span class="badge bg-success mb-1" style="font-size: 0.9em;">{{ item.text }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <h6 class="mt-4"><i class="bi bi-briefcase"></i> Experience & Roles</h6>
+                    <div>
+                        {% for item in app.extracted_data %}
+                            {% if item.label in 'Experience,Job Title' %}
+                                <span class="badge bg-warning text-dark mb-1" style="font-size: 0.9em;">{{ item.text }} ({{ item.label }})</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <h6 class="mt-4"><i class="bi bi-mortarboard"></i> Education</h6>
+                    <div>
+                        {% for item in app.extracted_data %}
+                            {% if item.label in 'Degree,University,Qualification' %}
+                                <span class="badge bg-primary mb-1" style="font-size: 0.9em;">{{ item.text }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">📄 Raw CV Content</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">This is the text PyMuPDF read from the file:</p>
+                    <div class="bg-light p-3 border rounded" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-size: 0.85rem;">
+                        {{ app.cv_text_content }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{% url 'web_test:job_ranking' app.job.id %}" class="btn btn-secondary">Back to Ranking</a>
+    </div>
+</div>
+{% endblock %}

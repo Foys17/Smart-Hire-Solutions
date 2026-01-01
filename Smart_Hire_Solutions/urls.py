@@ -7,6 +7,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/users/", include("users.urls", namespace="users")),
     path("api/jobs/", include("jobs.urls", namespace="jobs")),
+    path('api/candidates/', include('candidates.urls', namespace='candidates')),
+    path('', include('frontend.urls')),
 ]
 
 # This allows you to open the PDF link in your browser during development
