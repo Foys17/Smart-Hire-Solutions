@@ -1,6 +1,7 @@
-import fitz  # PyMuPDF
+import fitz
 import numpy as np
 import re
+from datetime import datetime
 from django.apps import apps
 from numpy.linalg import norm
 
@@ -9,23 +10,75 @@ def extract_text_from_pdf(cv_file):
     try:
         with fitz.open(stream=cv_file.read(), filetype="pdf") as doc:
             for page in doc:
-                text += page.get_text()
+                blocks = page.get_text("blocks")
+                blocks.sort(key=lambda b: (b[1], b[0]))
+                for b in blocks:
+                    text += b[4] + "\n"
     except Exception as e:
         print(f"❌ Error reading CV PDF: {e}")
     return text
 
+def calculate_experience_years(text):
+    """
+    Scans text for date ranges (e.g. Jan 2020 - Present) and calculates total years.
+    Handles overlaps.
+    """
+    # Regex to find dates: Jan 2020 or January 2020
+    # Supports 'Present', 'Current', 'Now'
+    date_pattern = r'(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})\s*[-–]\s*(Present|Current|Now|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4})'
+    
+    matches = re.findall(date_pattern, text, re.IGNORECASE)
+    intervals = []
+    
+    for start_month, start_year, end_str in matches:
+        try:
+            # Parse Start
+            start_date = datetime.strptime(f"{start_month[:3]} {start_year}", "%b %Y")
+            
+            # Parse End
+            if end_str.lower() in ['present', 'current', 'now']:
+                end_date = datetime.now()
+            else:
+                # Cleanup end string to match parsing format
+                # Expecting "Month YYYY"
+                end_str_clean = re.sub(r'[-–]', '', end_str).strip()
+                end_parts = end_str_clean.split()
+                if len(end_parts) >= 2:
+                    end_date = datetime.strptime(f"{end_parts[0][:3]} {end_parts[-1]}", "%b %Y")
+                else:
+                    continue
+
+            intervals.append((start_date, end_date))
+        except Exception:
+            continue
+
+    if not intervals:
+        return 0.0
+
+    # Merge Overlapping Intervals
+    intervals.sort()
+    merged = []
+    if intervals:
+        curr_start, curr_end = intervals[0]
+        for next_start, next_end in intervals[1:]:
+            if next_start < curr_end: # Overlap
+                curr_end = max(curr_end, next_end)
+            else:
+                merged.append((curr_start, curr_end))
+                curr_start, curr_end = next_start, next_end
+        merged.append((curr_start, curr_end))
+
+    # Sum total days
+    total_days = sum((end - start).days for start, end in merged)
+    return round(total_days / 365.25, 1)
+
 def calculate_cosine_similarity(vec_a, vec_b):
-    if vec_a is None or vec_b is None:
-        return 0.0
+    if vec_a is None or vec_b is None: return 0.0
     try:
-        a = np.array(vec_a)
-        b = np.array(vec_b)
-        if a.size == 0 or b.size == 0 or np.all(a == 0) or np.all(b == 0):
-            return 0.0
-        score = np.dot(a, b) / (norm(a) * norm(b))
-        return float(score)
-    except Exception:
-        return 0.0
+        a, b = np.array(vec_a), np.array(vec_b)
+        if a.size == 0 or b.size == 0 or np.all(a == 0) or np.all(b == 0): return 0.0
+        return float(np.dot(a, b) / (norm(a) * norm(b)))
+    except: return 0.0
 
 def process_application(application_instance):
     print(f"--- Processing Application ID: {application_instance.id} ---")
@@ -34,99 +87,86 @@ def process_application(application_instance):
         JobsConfig = apps.get_app_config('jobs')
         gliner = JobsConfig.gliner_model
         jina = JobsConfig.jina_model
-    except LookupError:
-        print("❌ Jobs app not loaded.")
-        return
+    except LookupError: return
 
-    if not gliner or not jina:
-        print("⚠️ AI Models not loaded.")
-        return
+    if not gliner or not jina: return
 
-    # 1. READ TEXT
     if application_instance.cv_file:
         raw_text = extract_text_from_pdf(application_instance.cv_file)
         application_instance.cv_file.seek(0)
-    else:
-        return
+    else: return
 
-    # 2. CLEANING
-    # Remove bullets but keep newlines to preserve list structure
+    # Cleaning
     clean_text = raw_text.replace("•", "").replace("●", "").replace("|", "")
-    # Remove excessive spaces but strictly strictly preserve meaningful text
     clean_text = re.sub(r'\s+', ' ', clean_text).strip()
-    
     application_instance.cv_text_content = clean_text
 
-    if not clean_text:
-        return
+    # --- LOGIC 1: CALCULATE EXPERIENCE YEARS ---
+    total_years = calculate_experience_years(clean_text)
+    print(f"⏱️ Calculated Experience: {total_years} Years")
 
-    # 3. GLiNER EXTRACTION (Expanded Labels)
-    # We added Database, Tool, Platform to catch "MySQL", "Docker", "Git"
+    # GLiNER Extraction
     labels = [
         "Skill", "Technology", "Framework", "Programming Language", 
-        "Job Title", "Experience", "Project", "Degree", 
-        "University", "Database", "Tool", "Platform"
+        "Job Title", "Project", "Degree", "University", 
+        "Database", "Tool", "Platform", "Cloud", "Service"
     ]
     
     try:
-        # Threshold 0.3 allows it to catch items in dense lists
         entities = gliner.predict_entities(clean_text, labels, threshold=0.3)
-        
         unique_data = []
         seen = set()
         
-        # Lists to build the "Focused Summary" for Jina
+        # Add the Calculated Years as a Logic Entity
+        unique_data.append({"label": "Total_Years_Calc", "text": str(total_years)})
+
+        # Fix Project Detection
+        idx_projects = clean_text.upper().find("PROJECTS")
+        other_headers = ["EXPERIENCE", "EDUCATION", "SKILLS", "SUMMARY"]
+        idx_next = len(clean_text)
+        if idx_projects != -1:
+            for h in other_headers:
+                idx = clean_text.upper().find(h)
+                if idx > idx_projects: idx_next = min(idx_next, idx)
+
         focused_skills = []
         focused_titles = []
-        
+
         for e in entities:
-            # Normalize key: ("skill", "python")
-            key = (e['label'], e['text'].strip().lower())
+            text, label = e['text'].strip(), e['label']
+            start = e.get('start', -1)
+
+            # Logic fixes
+            if idx_projects != -1 and label == "Job Title" and idx_projects < start < idx_next:
+                label = "Project"
             
+            if text.upper() in ["AWS", "DOCKER", "KUBERNETES", "GIT", "GITHUB"]:
+                if label not in ["Job Title", "Project"]: label = "Technology"
+
+            key = (label, text.lower())
             if key not in seen:
                 seen.add(key)
-                unique_data.append({"label": e["label"], "text": e["text"].strip()})
+                unique_data.append({"label": label, "text": text})
                 
-                # Collect keywords for the embedding summary
-                if e['label'] in ["Skill", "Technology", "Framework", "Database", "Tool", "Platform"]:
-                    focused_skills.append(e["text"].strip())
-                elif e['label'] in ["Job Title", "Experience"]:
-                    focused_titles.append(e["text"].strip())
+                if label in ["Skill", "Technology", "Framework", "Database", "Tool", "Platform"]:
+                    focused_skills.append(text)
+                elif label in ["Job Title"]:
+                    focused_titles.append(text)
 
         application_instance.extracted_data = unique_data
-        print(f"✅ Extracted {len(unique_data)} unique entities.")
-        
     except Exception as e:
-        print(f"❌ GLiNER failed: {e}")
+        print(e)
         application_instance.extracted_data = []
-        focused_skills = []
-        focused_titles = []
 
-    # 4. JINA EMBEDDING (The Fix)
-    # We REMOVED the [:1000] limit. Jina v2 can handle the whole text.
-    rich_context = (
-        f"Candidate Role: {', '.join(focused_titles)}. "
-        f"Key Skills & Tools: {', '.join(focused_skills)}. "
-        f"Full Profile: {clean_text}"  # <--- Reading the FULL text now
-    )
-    
+    # Jina Embedding
+    rich_context = f"Role: {', '.join(focused_titles)}. Skills: {', '.join(focused_skills)}. Exp: {total_years} years. Full: {clean_text}"
     try:
-        print("🔍 Generating Focused Embedding...")
-        cv_vector_numpy = jina.encode(rich_context)
-        application_instance.cv_embedding = cv_vector_numpy.tolist()
-    except Exception as e:
-        print(f"❌ Jina Encoding failed: {e}")
-        return
+        application_instance.cv_embedding = jina.encode(rich_context).tolist()
+    except: return
 
-    # 5. SCORING
-    job_instance = application_instance.job
-    job_vector = job_instance.jina_embedding
-
-    if job_vector:
-        similarity = calculate_cosine_similarity(application_instance.cv_embedding, job_vector)
-        application_instance.match_score = round(similarity * 100, 2)
-        print(f"🎉 FINAL SCORE: {application_instance.match_score}%")
-    else:
-        application_instance.match_score = 0.0
-
+    # Scoring
+    if application_instance.job.jina_embedding:
+        sim = calculate_cosine_similarity(application_instance.cv_embedding, application_instance.job.jina_embedding)
+        application_instance.match_score = round(sim * 100, 2)
+    
     application_instance.save()

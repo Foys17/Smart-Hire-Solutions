@@ -25,6 +25,7 @@
                 
                 {% if request.user.role == 'HR' %}
                     <a href="{% url 'web_test:job_ranking' job.id %}" class="btn btn-sm btn-warning">Ranking</a>
+                    <a href="{% url 'web_test:hr_upload_cv' job.id %}" class="btn btn-sm btn-outline-success">+ Add CV</a>
                 {% endif %}
             </td>
         </tr>

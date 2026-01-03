@@ -40,3 +40,40 @@ class UserRegistrationForm(UserCreationForm):
         widgets = {
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}),
         }
+
+class HRUploadCVForm(forms.Form):
+    # Candidate Details
+    full_name = forms.CharField(max_length=255, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Candidate Name'}))
+    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Candidate Email'}))
+    
+    # File
+    cv_file = forms.FileField(widget=forms.FileInput(attrs={'class': 'form-control'}))
+    
+    # Reference Info
+    reference_name = forms.CharField(
+        required=False, 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Referrer Name (Optional)'})
+    )
+
+
+class InterviewInviteForm(forms.Form):
+    application_ids = forms.CharField(widget=forms.HiddenInput()) # Stores "1,2,5"
+    
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Interview Date"
+    )
+    time = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+        label="Interview Time"
+    )
+    location = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Google Meet Link or Office Address'}),
+        label="Location / Link"
+    )
+    message = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Any specific instructions...'}),
+        required=False,
+        label="Additional Message"
+    )

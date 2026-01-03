@@ -16,8 +16,14 @@ urlpatterns = [
     path('jobs/<int:job_id>/apply/', views.apply_for_job, name='apply_job'),
     path('jobs/<int:job_id>/ranking/', views.job_ranking, name='job_ranking'),
     path('jobs/<int:pk>/', views.job_detail, name='job_detail'),      # New: View Details
-    path('jobs/<int:pk>/edit/', views.job_edit, name='job_edit'),     # New: Edit Job
-    
+    path('jobs/<int:pk>/edit/', views.job_edit, name='job_edit'),
+    path('jobs/<int:pk>/delete/', views.delete_job, name='delete_job'),
+    path('jobs/<int:pk>/toggle-status/', views.toggle_job_status, name='toggle_job_status'),
+
+
     path('applications/<int:pk>/', views.application_detail, name='application_detail'),
+    path('jobs/<int:job_id>/upload-cv/', views.hr_upload_cv, name='hr_upload_cv'),
+    path('application/<int:application_id>/invite/', views.send_interview_invite, name='send_interview_invite'),
+    path('bulk-invite/', views.bulk_send_invite, name='bulk_send_invite'),
 
 ]
