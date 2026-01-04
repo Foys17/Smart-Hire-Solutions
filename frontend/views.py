@@ -13,6 +13,11 @@ from django.conf import settings
 
 User = get_user_model()
 
+
+def home(request):
+    """Public Landing Page"""
+    return render(request, 'home.html')
+
 @login_required
 def dashboard(request):
     """Landing page showing buttons based on Role."""

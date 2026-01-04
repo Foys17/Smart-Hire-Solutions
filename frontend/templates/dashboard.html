@@ -1,15 +1,53 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div class="text-center">
-    <h1>Testing Dashboard</h1>
-    <p>Select an action based on your role.</p>
+<div class="text-center mb-12">
+    <h1 class="text-4xl font-extrabold text-slate-900 mb-4">
+        Welcome back, <span class="text-indigo-600">{{ request.user.full_name }}</span>!
+    </h1>
+    <p class="text-lg text-slate-500 max-w-2xl mx-auto">
+        Your AI-powered hiring assistant is ready. Manage jobs, track candidates, and analyze resumes with intelligent insights.
+    </p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
     
-    <div class="mt-4">
-        <a href="{% url 'web_test:job_list' %}" class="btn btn-primary btn-lg">View All Jobs</a>
-        
-        {% if request.user.role == 'HR' %}
-            <a href="{% url 'web_test:create_job' %}" class="btn btn-success btn-lg">Post New Job</a>
-        {% endif %}
+    <a href="{% url 'web_test:job_list' %}" class="group relative bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:border-indigo-100 transition-all duration-300">
+        <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition">
+            <i class="bi bi-briefcase text-9xl text-indigo-600"></i>
+        </div>
+        <div class="w-14 h-14 bg-indigo-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 transition">
+            <i class="bi bi-briefcase text-2xl text-indigo-600 group-hover:text-white transition"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2 text-slate-900">Browse Jobs</h3>
+        <p class="text-slate-500 mb-4">View active listings and check application status.</p>
+        <span class="text-indigo-600 font-medium group-hover:underline">View List &rarr;</span>
+    </a>
+
+    {% if request.user.role == 'HR' %}
+    <a href="{% url 'web_test:create_job' %}" class="group relative bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:border-emerald-100 transition-all duration-300">
+        <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition">
+            <i class="bi bi-plus-circle text-9xl text-emerald-600"></i>
+        </div>
+        <div class="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 transition">
+            <i class="bi bi-plus-lg text-2xl text-emerald-600 group-hover:text-white transition"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2 text-slate-900">Post New Job</h3>
+        <p class="text-slate-500 mb-4">Create a new opening and let AI analyze the requirements.</p>
+        <span class="text-emerald-600 font-medium group-hover:underline">Create Now &rarr;</span>
+    </a>
+    {% endif %}
+
+    <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white shadow-lg">
+        <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm">
+            <i class="bi bi-person-badge text-2xl text-white"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2">My Profile</h3>
+        <p class="text-slate-300 mb-6">Manage your account settings and preferences.</p>
+        <div class="flex flex-col gap-2 text-sm text-slate-400">
+            <span><i class="bi bi-envelope mr-2"></i> {{ request.user.email }}</span>
+            <span><i class="bi bi-shield-lock mr-2"></i> {{ request.user.role }}</span>
+        </div>
     </div>
 </div>
 {% endblock %}

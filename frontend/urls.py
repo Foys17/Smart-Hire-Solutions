@@ -9,6 +9,12 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),
 
+    # --- NEW HOME PAGE ---
+    path('', views.home, name='home'),  # Root URL now goes to Landing Page
+
+    # --- DASHBOARD MOVED ---
+    path('dashboard/', views.dashboard, name='dashboard'),
+
     # Your existing URLs
     path('', views.dashboard, name='dashboard'),
     path('jobs/', views.job_list, name='job_list'),
