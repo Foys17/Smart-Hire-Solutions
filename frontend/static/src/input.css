@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom tweaks to match your previous inline styles */
+@layer base {
+    body {
+        @apply bg-slate-50 text-slate-800 antialiased;
+    }
+    
+    /* Form input defaults */
+    input[type="text"], 
+    input[type="password"], 
+    input[type="email"], 
+    input[type="date"], 
+    input[type="time"], 
+    input[type="number"], 
+    select, 
+    textarea {
+        @apply w-full px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white transition-all mt-1 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10;
+    }
+
+    label {
+        @apply text-sm font-medium text-slate-700;
+    }
+}

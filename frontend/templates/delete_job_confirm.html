@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+        
+        <div class="p-8 text-center">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-6">
+                <i class="bi bi-exclamation-triangle-fill text-3xl text-red-600"></i>
+            </div>
+
+            <h2 class="text-2xl font-bold tracking-tight text-slate-900 mb-2">
+                Delete Job Post?
+            </h2>
+
+            <p class="text-slate-500 mb-6">
+                Are you sure you want to permanently delete the job listing for:
+                <br>
+                <span class="font-bold text-slate-900 text-lg">"{{ job.title }}"</span>
+            </p>
+
+            <div class="bg-red-50 border border-red-100 rounded-xl p-4 mb-8 text-left">
+                <div class="flex items-start gap-3">
+                    <i class="bi bi-info-circle-fill text-red-600 mt-0.5"></i>
+                    <div>
+                        <h4 class="text-sm font-bold text-red-800">Warning: Irreversible Action</h4>
+                        <p class="text-sm text-red-700 mt-1">
+                            This will delete the job post, all associated candidate applications, and every AI analysis report linked to this role. This data cannot be recovered.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="flex flex-col sm:flex-row gap-3">
+                {% csrf_token %}
+                
+                <a href="{% url 'web_test:job_detail' job.id %}" class="w-full inline-flex justify-center items-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                    Cancel
+                </a>
+
+                <button type="submit" class="w-full inline-flex justify-center items-center rounded-xl border border-transparent bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition">
+                    <i class="bi bi-trash3-fill mr-2"></i> Yes, Delete it
+                </button>
+            </form>
+        </div>
+        
+        <div class="h-2 bg-red-500 w-full"></div>
+    </div>
+</div>
+{% endblock %}

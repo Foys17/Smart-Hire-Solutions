@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <h1 class="text-3xl font-extrabold text-slate-900">{{ job.title }}</h1>
+                {% if job.status == 'OPEN' %}
+                    <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-bold border border-green-200 shadow-sm">
+                        OPEN
+                    </span>
+                {% else %}
+                    <span class="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-bold border border-red-200 shadow-sm">
+                        CLOSED
+                    </span>
+                {% endif %}
+            </div>
+            <p class="text-slate-500 font-medium">
+                Posted by <span class="text-indigo-600">{{ job.posted_by.full_name }}</span> 
+                on {{ job.created_at|date:"M d, Y" }}
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            {% if request.user.role == 'HR' %}
+                <a href="{% url 'web_test:job_edit' job.id %}" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition shadow-sm">
+                    ✏️ Edit
+                </a>
+                <a href="{% url 'web_test:hr_upload_cv' job.id %}" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition shadow-sm">
+                    📤 Upload CV
+                </a>
+                <a href="{% url 'web_test:toggle_job_status' job.id %}" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition shadow-sm">
+                    {% if job.status == 'OPEN' %} 🔒 Close {% else %} 🔓 Re-Open {% endif %}
+                </a>
+                <a href="{% url 'web_test:job_ranking' job.id %}" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg shadow-md transition">
+                    🏆 Rankings
+                </a>
+                <a href="{% url 'web_test:delete_job' job.id %}" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-medium rounded-lg transition">
+                    🗑️ Delete
+                </a>
+            {% elif request.user.role == 'Reviewer' %}
+                <a href="{% url 'web_test:job_edit' job.id %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Edit</a>
+                <a href="{% url 'web_test:job_ranking' job.id %}" class="px-4 py-2 bg-amber-500 text-white rounded-lg">Rankings</a>
+            {% endif %}
+            
+            <a href="{% url 'web_test:job_list' %}" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium">Back</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-50 to-white px-6 py-4 border-b border-indigo-100">
+                <h3 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
+                    <i class="bi bi-robot"></i> AI Analysis
+                </h3>
+            </div>
+            <div class="p-6 space-y-6">
+                
+                <div>
+                    <h4 class="text-sm uppercase tracking-wider text-slate-400 font-bold mb-3">Tech Stack & Tools</h4>
+                    <div class="flex flex-wrap gap-2">
+                        {% for item in job.gliner_entities %}
+                            {% if item.label in 'Skill,Technology,Framework,Programming Language,Software,Tool,Database,Platform' %}
+                                <span class="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-sm font-semibold">
+                                    {{ item.text }}
+                                </span>
+                            {% endif %}
+                        {% empty %}
+                            <p class="text-slate-400 italic text-sm">No tech stack detected.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-sm uppercase tracking-wider text-slate-400 font-bold mb-3">Role Requirements</h4>
+                    <div class="flex flex-wrap gap-2">
+                        {% for item in job.gliner_entities %}
+                            {% if item.label in 'Experience,Job Title' %}
+                                <span class="px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-100 text-sm font-semibold">
+                                    {{ item.text }}
+                                </span>
+                            {% endif %}
+                            {% if item.label == 'Min_Years_Req' %}
+                                <span class="px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 border border-rose-100 text-sm font-bold">
+                                    Min {{ item.text }} Years Required
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-sm uppercase tracking-wider text-slate-400 font-bold mb-3">Qualifications</h4>
+                    <div class="flex flex-wrap gap-2">
+                        {% for item in job.gliner_entities %}
+                            {% if item.label in 'Degree,Qualification' %}
+                                <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100 text-sm font-semibold">
+                                    {{ item.text }}
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="pt-4 mt-2 border-t border-slate-100">
+                    <span class="text-xs font-medium text-slate-400">System Status:</span>
+                    {% if job.jina_embedding %}
+                        <span class="text-xs font-bold text-green-600">✅ Vector Embedding Ready</span>
+                    {% else %}
+                        <span class="text-xs font-bold text-red-500">❌ Processing Needed</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="bi bi-file-text"></i> Job Description
+                </h3>
+            </div>
+            <div class="p-6 flex-grow">
+                <div class="prose prose-slate max-w-none text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
+{{ job.processed_text|default:job.description_text }}
+                </div>
+            </div>
+            {% if job.description_file %}
+                <div class="bg-slate-50 px-6 py-3 border-t border-slate-200">
+                    <a href="{{ job.description_file.url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-2">
+                        <i class="bi bi-file-earmark-pdf text-lg"></i> Download Original PDF
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

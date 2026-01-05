@@ -1,5 +1,30 @@
-venv/
+# --- Python & Django ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+db.sqlite3
+.env
+*.log
+
+# --- Environments ---
 env/
+venv/
 .venv/
-# Ignore ML Models
+.env
+
+# --- Static & Media ---
+staticfiles/
+media/
+# Exception: Keep the media directory structure, just ignore files
+!media/.gitkeep
+
+# --- Node.js & Tailwind CSS ---
+node_modules/
+npm-debug.log
+yarn-error.log
+# Ignore the generated CSS output (it is rebuilt on run)
+frontend/static/css/output.css
+
+# --- AI Models ---
 ml_models/

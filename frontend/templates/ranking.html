@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-900">Candidate Rankings</h2>
+            <p class="text-slate-500">Job: <span class="font-medium text-indigo-600">{{ job.title }}</span></p>
+        </div>
+        <div class="flex gap-3">
+            <button type="button" onclick="openBulkModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md transition-colors text-sm font-medium">
+                <i class="bi bi-envelope mr-2"></i> Invite Selected
+            </button>
+            <a href="{% url 'web_test:job_list' %}" class="inline-flex items-center px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+                Back to Jobs
+            </a>
+        </div>
+    </div>
+
+    <div class="flex gap-1 bg-white p-1 rounded-lg border border-slate-200 w-fit shadow-sm">
+        <a href="?" class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors {% if not request.GET.ref %}bg-slate-100 text-slate-900{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+            Show All
+        </a>
+        <a href="?ref=true" class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors {% if request.GET.ref %}bg-slate-100 text-slate-900{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+            With References
+        </a>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                    <tr>
+                        <th class="px-6 py-4 w-12">
+                            <input type="checkbox" onclick="toggleAll(this)" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                        </th>
+                        <th class="px-6 py-4">Rank</th>
+                        <th class="px-6 py-4">AI Score</th>
+                        <th class="px-6 py-4">Candidate</th>
+                        <th class="px-6 py-4">Key Skills</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for app in applications %}
+                    <tr class="hover:bg-slate-50/80 transition-colors {% if app.match_score > 80 %}bg-green-50/30{% endif %}">
+                        <td class="px-6 py-4">
+                            <input type="checkbox" class="candidate-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4" value="{{ app.id }}">
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-900">#{{ forloop.counter }}</td>
+                        <td class="px-6 py-4">
+                            {% if app.match_score > 75 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                    {{ app.match_score }}%
+                                </span>
+                            {% elif app.match_score > 50 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">
+                                    {{ app.match_score }}%
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                                    {{ app.match_score }}%
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="font-medium text-slate-900">{{ app.candidate.full_name }}</div>
+                            <div class="text-xs text-slate-500">{{ app.candidate.email }}</div>
+                            {% if app.has_reference %}
+                                <div class="mt-1 text-xs text-indigo-600 font-medium">Ref: {{ app.reference_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-1 max-w-xs">
+                                {% for item in app.extracted_data|slice:":4" %} 
+                                    {% if item.label in 'Skill,Technology,Framework' %}
+                                        <span class="px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600 border border-slate-200">{{ item.text }}</span>
+                                    {% endif %}
+                                {% empty %}
+                                    <span class="text-slate-400 text-xs">-</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-md text-xs font-medium bg-white border border-slate-200 text-slate-600">
+                                {{ app.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                {% if app.cv_file %}
+                                    <a href="{{ app.cv_file.url }}" target="_blank" class="p-2 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="View CV">
+                                        <i class="bi bi-file-pdf"></i>
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'web_test:application_detail' app.id %}" class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs border border-indigo-100 rounded-md font-medium transition-colors">
+                                    Analyze
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                            No applications found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="bulkInviteModal" class="hidden fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeBulkModal()"></div>
+
+    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+        <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+            
+            <form method="post" action="{% url 'web_test:bulk_send_invite' %}">
+                {% csrf_token %}
+                <input type="hidden" name="application_ids" id="modalAppIds">
+
+                <div class="bg-indigo-600 px-4 py-4 sm:px-6">
+                    <h3 class="text-lg font-semibold leading-6 text-white flex items-center gap-2">
+                        <i class="bi bi-send-fill"></i> Send Interview Invites
+                    </h3>
+                    <p class="text-indigo-100 text-sm mt-1">
+                        Inviting <strong id="selectedCount" class="text-white">0</strong> candidate(s)
+                    </p>
+                </div>
+
+                <div class="px-4 py-6 sm:px-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Date</label>
+                        <input type="date" name="date" required class="mt-1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Time</label>
+                        <input type="time" name="time" required class="mt-1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Location / Link</label>
+                        <input type="text" name="location" placeholder="e.g. Google Meet" required class="mt-1">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Message (Optional)</label>
+                        <textarea name="message" rows="3" class="mt-1"></textarea>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-slate-100">
+                    <button type="submit" class="inline-flex w-full justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto">
+                        Send Invites
+                    </button>
+                    <button type="button" onclick="closeBulkModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle Checkboxes
+    function toggleAll(source) {
+        const checkboxes = document.querySelectorAll('.candidate-checkbox');
+        checkboxes.forEach(cb => cb.checked = source.checked);
+    }
+
+    // Modal Logic (Vanilla JS - No Bootstrap JS needed)
+    function openBulkModal() {
+        const checkboxes = document.querySelectorAll('.candidate-checkbox:checked');
+        const selected = Array.from(checkboxes).map(cb => cb.value);
+
+        if (selected.length === 0) {
+            alert("Please select at least one candidate first!");
+            return;
+        }
+
+        document.getElementById('modalAppIds').value = selected.join(",");
+        document.getElementById('selectedCount').innerText = selected.length;
+        
+        // Show modal
+        document.getElementById('bulkInviteModal').classList.remove('hidden');
+    }
+
+    function closeBulkModal() {
+        document.getElementById('bulkInviteModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

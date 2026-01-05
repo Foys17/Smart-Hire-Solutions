@@ -6,3 +6,7 @@ psycopg2-binary
 gliner 
 sentence-transformers 
 pymupdf
+numpy
+django-allauth
+cryptography
+python-dotenv
