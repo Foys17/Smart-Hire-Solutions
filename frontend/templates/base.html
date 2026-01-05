@@ -7,17 +7,17 @@
     <title>Smart Hire AI</title>
     
     <link href="{% static 'css/output.css' %}" rel="stylesheet">
-    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
-<body class="selection:bg-indigo-100 selection:text-indigo-700">
+<body class="selection:bg-indigo-100 selection:text-indigo-700 font-sans">
 
+    {# --- Added block navbar around the nav element --- #}
+    {% block navbar %}
     <nav class="sticky top-0 z-50 w-full backdrop-blur-lg bg-white/70 border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <a href="{% url 'web_test:dashboard' %}" class="flex items-center gap-2 group">
+                <a href="{% url 'web_test:home' %}" class="flex items-center gap-2 group">
                     <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition-transform">
                         <i class="bi bi-briefcase-fill"></i>
                     </div>
@@ -45,19 +45,24 @@
             </div>
         </div>
     </nav>
+    {% endblock navbar %}
+    {# --- End block navbar --- #}
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {# Changed py-8 to min-h-screen to ensure full coverage #}
+    <main class="w-full">
         {% if messages %}
-            <div class="mb-6 space-y-2">
-                {% for message in messages %}
-                    <div class="p-4 rounded-lg shadow-sm border-l-4 flex items-center gap-3
-                        {% if message.tags == 'success' %} bg-green-50 border-green-500 text-green-700
-                        {% elif message.tags == 'error' %} bg-red-50 border-red-500 text-red-700
-                        {% else %} bg-blue-50 border-blue-500 text-blue-700 {% endif %}">
-                        <i class="bi bi-info-circle-fill"></i>
-                        {{ message }}
-                    </div>
-                {% endfor %}
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+                <div class="space-y-2">
+                    {% for message in messages %}
+                        <div class="p-4 rounded-lg shadow-sm border-l-4 flex items-center gap-3
+                            {% if message.tags == 'success' %} bg-green-50 border-green-500 text-green-700
+                            {% elif message.tags == 'error' %} bg-red-50 border-red-500 text-red-700
+                            {% else %} bg-blue-50 border-blue-500 text-blue-700 {% endif %}">
+                            <i class="bi bi-info-circle-fill"></i>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         {% endif %}
 

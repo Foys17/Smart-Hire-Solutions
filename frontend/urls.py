@@ -30,5 +30,7 @@ urlpatterns = [
     path('jobs/<int:job_id>/upload-cv/', views.hr_upload_cv, name='hr_upload_cv'),
     path('application/<int:application_id>/invite/', views.send_interview_invite, name='send_interview_invite'),
     path('bulk-invite/', views.bulk_send_invite, name='bulk_send_invite'),
+    path('jobs/<int:job_id>/status/', views.candidate_job_status, name='candidate_job_status'),
+    path('application/<int:application_id>/withdraw/', views.withdraw_application, name='withdraw_application'),
 
 ]

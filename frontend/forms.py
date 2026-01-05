@@ -30,8 +30,6 @@ SELECT_STYLE = (
     "outline-none transition duration-200 bg-white"
 )
 
-# -------------------------------------
-
 class JobForm(forms.ModelForm):
     class Meta:
         model = Job
@@ -50,6 +48,22 @@ class JobForm(forms.ModelForm):
                 'class': FILE_INPUT_STYLE
             }),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        desc_text = cleaned_data.get('description_text')
+        desc_file = cleaned_data.get('description_file')
+
+        # 1. Validation: Neither provided
+        if not desc_text and not desc_file:
+            raise forms.ValidationError("You must provide either Job Description Text OR upload a PDF file.")
+
+        # 2. Validation: Both provided
+        if desc_text and desc_file:
+            raise forms.ValidationError("Please provide ONLY one source: either paste Text OR upload a File, not both.")
+
+        return cleaned_data
+
 
 class ApplicationForm(forms.ModelForm):
     class Meta:

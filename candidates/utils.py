@@ -5,6 +5,23 @@ from datetime import datetime
 from django.apps import apps
 from numpy.linalg import norm
 
+# --- 1. DEFINE A SAFETY NET OF KEYWORDS ---
+# GLiNER matches context, this matches exact raw text to catch dense lists.
+HARD_SKILLS_DB = {
+    # Languages
+    "python", "java", "c++", "c#", "javascript", "typescript", "php", "ruby", "swift", "kotlin", "go", "rust",
+    # Web / Frameworks
+    "django", "flask", "fastapi", "react", "angular", "vue", "next.js", "node.js", "spring", "laravel", 
+    "asp.net", "rubyonrails", "flutter", "react native",
+    # Data / AI
+    "numpy", "pandas", "pytorch", "tensorflow", "keras", "scikit-learn", "opencv", "matplotlib", "seaborn", 
+    "nltk", "spacy", "huggingface", "llm", "rag", "transformer", "yolo", "chromadb", "langchain", "ollama",
+    # DevOps / Tools
+    "docker", "kubernetes", "aws", "azure", "gcp", "git", "github", "gitlab", "jenkins", "terraform", "linux", "redis",
+    # Databases
+    "sql", "mysql", "postgresql", "mongodb", "sqlite", "oracle", "firebase", "elasticsearch"
+}
+
 def extract_text_from_pdf(cv_file):
     text = ""
     try:
@@ -23,8 +40,6 @@ def calculate_experience_years(text):
     Scans text for date ranges (e.g. Jan 2020 - Present) and calculates total years.
     Handles overlaps.
     """
-    # Regex to find dates: Jan 2020 or January 2020
-    # Supports 'Present', 'Current', 'Now'
     date_pattern = r'(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{4})\s*[-–]\s*(Present|Current|Now|(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4})'
     
     matches = re.findall(date_pattern, text, re.IGNORECASE)
@@ -40,7 +55,6 @@ def calculate_experience_years(text):
                 end_date = datetime.now()
             else:
                 # Cleanup end string to match parsing format
-                # Expecting "Month YYYY"
                 end_str_clean = re.sub(r'[-–]', '', end_str).strip()
                 end_parts = end_str_clean.split()
                 if len(end_parts) >= 2:
@@ -105,22 +119,26 @@ def process_application(application_instance):
     total_years = calculate_experience_years(clean_text)
     print(f"⏱️ Calculated Experience: {total_years} Years")
 
-    # GLiNER Extraction
+    # GLiNER Extraction Config
     labels = [
         "Skill", "Technology", "Framework", "Programming Language", 
         "Job Title", "Project", "Degree", "University", 
         "Database", "Tool", "Platform", "Cloud", "Service"
     ]
     
+    unique_data = []
+    focused_skills = []
+    focused_titles = []
+
     try:
+        # 1. AI Extraction (Context Aware)
         entities = gliner.predict_entities(clean_text, labels, threshold=0.3)
-        unique_data = []
         seen = set()
         
         # Add the Calculated Years as a Logic Entity
         unique_data.append({"label": "Total_Years_Calc", "text": str(total_years)})
 
-        # Fix Project Detection
+        # Header detection for context fixes
         idx_projects = clean_text.upper().find("PROJECTS")
         other_headers = ["EXPERIENCE", "EDUCATION", "SKILLS", "SUMMARY"]
         idx_next = len(clean_text)
@@ -129,14 +147,11 @@ def process_application(application_instance):
                 idx = clean_text.upper().find(h)
                 if idx > idx_projects: idx_next = min(idx_next, idx)
 
-        focused_skills = []
-        focused_titles = []
-
         for e in entities:
             text, label = e['text'].strip(), e['label']
             start = e.get('start', -1)
 
-            # Logic fixes
+            # Context Logic fixes
             if idx_projects != -1 and label == "Job Title" and idx_projects < start < idx_next:
                 label = "Project"
             
@@ -148,18 +163,37 @@ def process_application(application_instance):
                 seen.add(key)
                 unique_data.append({"label": label, "text": text})
                 
-                if label in ["Skill", "Technology", "Framework", "Database", "Tool", "Platform"]:
+                if label in ["Skill", "Technology", "Framework", "Database", "Tool", "Platform", "Programming Language"]:
                     focused_skills.append(text)
                 elif label in ["Job Title"]:
                     focused_titles.append(text)
 
+        # --- 2. KEYWORD SAFETY NET (REGEX FALLBACK) ---
+        # Catches skills that exist in text but GLiNER missed due to formatting
+        existing_skills_lower = {s.lower() for s in focused_skills}
+        text_lower = clean_text.lower()
+        
+        for skill in HARD_SKILLS_DB:
+            # Use regex boundaries \b to ensure we match "Go" but not "Good"
+            if skill not in existing_skills_lower:
+                if re.search(r'\b' + re.escape(skill) + r'\b', text_lower):
+                    print(f"⚠️ Recovered missing skill via Regex: {skill}")
+                    # Add to extracted data so it shows in UI with a special label
+                    unique_data.append({"label": "Skill (Detected)", "text": skill.title()})
+                    # Add to list used for Jina Embedding
+                    focused_skills.append(skill.title())
+                    existing_skills_lower.add(skill)
+
         application_instance.extracted_data = unique_data
+
     except Exception as e:
-        print(e)
+        print(f"Extraction Error: {e}")
         application_instance.extracted_data = []
 
     # Jina Embedding
+    # Now includes both AI-found and Regex-recovered skills
     rich_context = f"Role: {', '.join(focused_titles)}. Skills: {', '.join(focused_skills)}. Exp: {total_years} years. Full: {clean_text}"
+    
     try:
         application_instance.cv_embedding = jina.encode(rich_context).tolist()
     except: return

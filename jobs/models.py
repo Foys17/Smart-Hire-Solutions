@@ -4,7 +4,7 @@ from django.conf import settings
 class Job(models.Model):
     posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    description_text = models.TextField(blank=True)
+    description_text = models.TextField(blank=True, null=True)
     description_file = models.FileField(upload_to='job_descriptions/', blank=True, null=True)
     
     # AI Fields

@@ -61,7 +61,7 @@ ROOT_URLCONF = 'Smart_Hire_Solutions.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'frontend' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -191,3 +191,7 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_PRESERVE_USERNAME_CASING = False
+
+
+# Allow social login on standard link click (Bypasses the "Process" page)
+SOCIALACCOUNT_LOGIN_ON_GET = True

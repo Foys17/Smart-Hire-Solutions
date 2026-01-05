@@ -1,30 +1,80 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-xl mx-auto mt-10">
-    <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        <div class="bg-indigo-600 p-8 text-center">
-            <h2 class="text-2xl font-bold text-white mb-2">Apply for {{ job.title }}</h2>
-            <p class="text-indigo-100 text-sm">Upload your CV to get matched instantly.</p>
+<div class="max-w-xl mx-auto px-4 py-10">
+    
+    <div class="mb-6">
+        <a href="{% url 'web_test:job_detail' job.id %}" class="group inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 rounded-lg transition-all shadow-sm hover:shadow-md">
+            <svg class="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Job Details
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden relative">
+        
+        <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
+
+        <div class="px-8 pt-8 pb-6 text-center border-b border-slate-50">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 mb-4 shadow-sm ring-4 ring-indigo-50/50">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">
+                Apply for <span class="text-indigo-600">{{ job.title }}</span>
+            </h2>
+            <p class="text-slate-500 mt-2 text-sm">
+                Ready to make an impact? Upload your CV to apply instantly.
+            </p>
         </div>
         
-        <form method="post" enctype="multipart/form-data" class="p-8 space-y-5">
-            {% csrf_token %}
-            
-            {% for field in form %}
-            <div>
-                <label class="block text-sm font-bold text-slate-700 mb-1">{{ field.label }}</label>
-                {{ field }} 
-                {% if field.help_text %}
-                    <p class="text-xs text-slate-400 mt-1">{{ field.help_text }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
+        <div class="p-8 bg-slate-50/30">
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                <div class="group">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        {{ field.label }}
+                        {% if field.field.required %}
+                            <span class="text-rose-500 text-xs" title="Required">*</span>
+                        {% endif %}
+                    </label>
+                    
+                    <div class="relative">
+                        <div class="[&>input]:w-full [&>input]:text-sm [&>input]:text-slate-500 [&>input]:file:mr-4 [&>input]:file:py-2.5 [&>input]:file:px-4 [&>input]:file:rounded-xl [&>input]:file:border-0 [&>input]:file:text-sm [&>input]:file:font-bold [&>input]:file:bg-indigo-50 [&>input]:file:text-indigo-700 hover:[&>input]:file:bg-indigo-100 [&>input]:cursor-pointer [&>input]:bg-white [&>input]:border [&>input]:border-slate-300 [&>input]:rounded-xl [&>input]:px-3 [&>input]:py-2 [&>input]:shadow-sm [&>input]:transition">
+                            {{ field }}
+                        </div>
+                    </div>
 
-            <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition transform active:scale-95">
-                Submit Application 🚀
-            </button>
-        </form>
+                    {% if field.help_text %}
+                        <p class="text-xs text-slate-500 mt-1.5 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            {{ field.help_text }}
+                        </p>
+                    {% endif %}
+
+                    {% if field.errors %}
+                        <div class="mt-1 text-sm text-rose-600 font-medium flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            {{ field.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full flex justify-center items-center gap-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all transform hover:-translate-y-0.5 active:scale-95">
+                        <span>Submit Application</span>
+                        <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-slate-50 px-8 py-4 border-t border-slate-100 text-center">
+            <p class="text-xs text-slate-400">
+                Your CV will be securely processed by our AI Matching Engine.
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}

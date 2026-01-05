@@ -27,6 +27,18 @@ def dashboard(request):
 def job_list(request):
     """Show all jobs. Candidates can apply here."""
     jobs = Job.objects.all().order_by('-created_at')
+    
+    # --- NEW LOGIC: Check User's Application Status ---
+    if request.user.is_authenticated and request.user.role == 'Candidate':
+        # Fetch all applications by this user
+        my_apps = Application.objects.filter(candidate=request.user)
+        # Create a dictionary map: { job_id: 'APPLIED' or 'SCREENED' etc. }
+        status_map = {app.job_id: app.status for app in my_apps}
+        
+        # Attach the status to each job object dynamically
+        for job in jobs:
+            job.current_user_status = status_map.get(job.id)
+            
     return render(request, 'job_list.html', {'jobs': jobs})
 
 @login_required
@@ -353,59 +365,124 @@ def application_detail(request, pk):
     return render(request, 'application_detail.html', context)
 
 
+# frontend/views.py
+import uuid # Add this import at the top of your file, or inside the function
+
 @login_required
 def hr_upload_cv(request, job_id):
     """
-    Allows HR to manually upload a CV for a candidate.
-    Creates a User account for the candidate if one doesn't exist.
+    Allows HR to:
+    1. Bulk upload raw PDFs (Auto-creates candidate from filename)
+    2. detailed upload with references (Manual entry)
     """
     job = get_object_or_404(Job, pk=job_id)
 
-    # Security: Only HR can access this
     if request.user.role != 'HR':
         messages.error(request, "Access Denied.")
         return redirect('web_test:job_list')
 
     if request.method == 'POST':
-        form = HRUploadCVForm(request.POST, request.FILES)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            name = form.cleaned_data['full_name']
-            cv_file = form.cleaned_data['cv_file']
-            ref_name = form.cleaned_data['reference_name']
+        success_count = 0
+        errors = []
 
-            # 1. Get or Create Candidate User
-            candidate, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'full_name': name,
-                    'role': 'Candidate',
+        # --- PART 1: PROCESS BULK FILES (No References) ---
+        bulk_files = request.FILES.getlist('bulk_cvs')
+        
+        for f in bulk_files:
+            try:
+                # 1. Derive Name from Filename (e.g., "John_Doe_CV.pdf" -> "John Doe Cv")
+                clean_name = f.name.rsplit('.', 1)[0].replace('_', ' ').replace('-', ' ').title()
+                
+                # 2. Generate Placeholder Email (Since we don't have one yet)
+                # The AI or HR can update this later
+                unique_id = str(uuid.uuid4())[:8]
+                placeholder_email = f"{clean_name.replace(' ', '.').lower()}.{unique_id}@pending.parsing"
+
+                # 3. Create User
+                candidate, created = User.objects.get_or_create(
+                    email=placeholder_email,
+                    defaults={'full_name': clean_name, 'role': 'Candidate'}
+                )
+                if created:
+                    candidate.set_unusable_password()
+                    candidate.save()
+
+                # 4. Create Application
+                app = Application.objects.create(
+                    job=job,
+                    candidate=candidate,
+                    cv_file=f,
+                    has_reference=False
+                )
+                
+                # 5. Trigger AI
+                process_application(app)
+                success_count += 1
+                
+            except Exception as e:
+                errors.append(f"Bulk File Error ({f.name}): {str(e)}")
+
+
+        # --- PART 2: PROCESS DETAILED ROWS (With References) ---
+        names = request.POST.getlist('full_name')
+        emails = request.POST.getlist('email')
+        refs = request.POST.getlist('reference_name')
+        files = request.FILES.getlist('cv_file')
+
+        # Only process if there are actually rows added
+        if names and files:
+            # Iterate through each manual entry
+            for i in range(len(names)):
+                # Skip empty rows if any
+                if not names[i] or not files[i]:
+                    continue
+
+                try:
+                    name = names[i]
+                    email = emails[i]
+                    cv_file = files[i]
+                    ref_name = refs[i] if i < len(refs) else ''
+
+                    # Create Candidate
+                    candidate, created = User.objects.get_or_create(
+                        email=email,
+                        defaults={'full_name': name, 'role': 'Candidate'}
+                    )
+                    if created:
+                        candidate.set_unusable_password()
+                        candidate.save()
+
+                    # Check Duplication
+                    if Application.objects.filter(job=job, candidate=candidate).exists():
+                        errors.append(f"Skipped {name}: Already applied.")
+                        continue
+
+                    # Create Application
+                    app = Application.objects.create(
+                        job=job,
+                        candidate=candidate,
+                        cv_file=cv_file,
+                        has_reference=bool(ref_name),
+                        reference_name=ref_name
+                    )
                     
-                }
-            )
-            if created:
-                candidate.set_unusable_password() # They can reset it later
-                candidate.save()
+                    # Trigger AI
+                    process_application(app)
+                    success_count += 1
 
-            # 2. Check if already applied
-            if Application.objects.filter(job=job, candidate=candidate).exists():
-                messages.warning(request, f"{name} has already applied for this job.")
-                return redirect('web_test:job_ranking', job_id=job.id)
+                except Exception as e:
+                    errors.append(f"Row {i+1} Error: {str(e)}")
 
-            # 3. Create Application
-            application = Application.objects.create(
-                job=job,
-                candidate=candidate,
-                cv_file=cv_file,
-                has_reference=bool(ref_name),
-                reference_name=ref_name
-            )
+        # --- FEEDBACK ---
+        if success_count > 0:
+            messages.success(request, f"Successfully processed {success_count} applications!")
+        
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+        
+        return redirect('web_test:job_ranking', job_id=job.id)
 
-            # 4. Trigger AI
-            process_application(application)
-
-            messages.success(request, f"CV uploaded for {name}. AI Scoring started!")
-            return redirect('web_test:job_ranking', job_id=job.id)
     else:
         form = HRUploadCVForm()
 
@@ -535,4 +612,40 @@ def bulk_send_invite(request):
             if applications.exists():
                 return redirect('web_test:job_ranking', job_id=applications.first().job.id)
             
+    return redirect('web_test:job_list')
+
+
+@login_required
+def candidate_job_status(request, job_id):
+    """
+    Displays the status of the candidate's application.
+    If status is 'APPLIED', allows them to delete/re-upload.
+    """
+    job = get_object_or_404(Job, pk=job_id)
+    
+    # Security Check
+    if request.user.role != 'Candidate':
+        return redirect('web_test:job_list')
+        
+    # Get the specific application
+    application = get_object_or_404(Application, job=job, candidate=request.user)
+    
+    return render(request, 'candidate_status.html', {
+        'application': application, 
+        'job': job
+    })
+
+@login_required
+def withdraw_application(request, application_id):
+    """
+    Allows candidate to delete their application (CV) only if status is APPLIED.
+    """
+    app = get_object_or_404(Application, pk=application_id, candidate=request.user)
+    
+    if app.status == 'APPLIED':
+        app.delete()
+        messages.success(request, "Your CV has been removed. You can now upload a new one.")
+    else:
+        messages.error(request, "You cannot delete your CV at this stage (already processed).")
+        
     return redirect('web_test:job_list')
