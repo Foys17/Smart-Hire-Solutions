@@ -28,37 +28,31 @@
                 </div>
 
                 {% if application.status != 'REJECTED' %}
-                <div class="relative flex justify-between items-center mb-12 max-w-xl mx-auto">
+                
+                <div class="relative flex justify-between items-center mb-12 max-w-sm mx-auto">
                     <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -z-10 rounded-full"></div>
                     
                     <div class="absolute top-1/2 left-0 h-1 bg-indigo-500 -z-10 rounded-full transition-all duration-1000"
-                        style="width: {% if application.status == 'APPLIED' %}15%{% elif application.status == 'SCREENED' %}50%{% elif application.status == 'SHORTLISTED' %}100%{% endif %};">
+                        style="width: {% if application.status == 'APPLIED' %}0%{% elif application.status == 'SHORTLISTED' %}100%{% endif %};">
                     </div>
 
                     <div class="flex flex-col items-center gap-2">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
-                            {% if application.status in 'APPLIED,SCREENED,SHORTLISTED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
-                            <i class="bi bi-check-lg"></i>
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
+                            {% if application.status in 'APPLIED,SHORTLISTED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
+                            <i class="bi bi-check-lg text-lg"></i>
                         </div>
-                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status in 'APPLIED,SCREENED,SHORTLISTED' %}text-indigo-600{% else %}text-slate-400{% endif %}">Applied</span>
+                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status in 'APPLIED,SHORTLISTED' %}text-indigo-600{% else %}text-slate-400{% endif %}">Applied</span>
                     </div>
 
                     <div class="flex flex-col items-center gap-2">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
-                            {% if application.status in 'SCREENED,SHORTLISTED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
-                            <i class="bi bi-search"></i>
-                        </div>
-                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status in 'SCREENED,SHORTLISTED' %}text-indigo-600{% else %}text-slate-400{% endif %}">Screened</span>
-                    </div>
-
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
                             {% if application.status == 'SHORTLISTED' %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
-                            <i class="bi bi-star-fill"></i>
+                            <i class="bi bi-star-fill text-lg"></i>
                         </div>
                         <span class="text-xs font-bold uppercase tracking-wider {% if application.status == 'SHORTLISTED' %}text-emerald-600{% else %}text-slate-400{% endif %}">Shortlisted</span>
                     </div>
                 </div>
+
                 {% else %}
                     <div class="bg-red-50 border border-red-100 rounded-2xl p-6 mb-10 text-center">
                         <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -72,7 +66,6 @@
                 <div class="flex justify-center mb-10">
                     <div class="inline-flex items-center gap-3 px-6 py-3 rounded-full shadow-sm border
                         {% if application.status == 'APPLIED' %}bg-blue-50 border-blue-200 text-blue-700
-                        {% elif application.status == 'SCREENED' %}bg-indigo-50 border-indigo-200 text-indigo-700
                         {% elif application.status == 'SHORTLISTED' %}bg-emerald-50 border-emerald-200 text-emerald-700
                         {% elif application.status == 'REJECTED' %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
                         

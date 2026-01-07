@@ -17,6 +17,9 @@
                 <a href="?ref=true" class="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200 hover:bg-indigo-100 transition flex items-center gap-2">
                     <i class="bi bi-people-fill"></i> Show Referrals Only
                 </a>
+                <button onclick="openInviteModal()" class="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 shadow-sm">
+                    <i class="bi bi-envelope-paper-fill"></i> Send Invites
+                </button>
             </div>
         </div>
 
@@ -25,6 +28,9 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                            <th class="p-4 w-10">
+                                <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                            </th>
                             <th class="p-4 font-bold">Rank</th>
                             <th class="p-4 font-bold">Candidate</th>
                             <th class="p-4 font-bold">Match Score</th>
@@ -36,6 +42,10 @@
                     <tbody class="divide-y divide-slate-100 text-sm text-slate-700">
                         {% for app in applications %}
                         <tr class="hover:bg-slate-50 transition-colors group">
+                            <td class="p-4">
+                                <input type="checkbox" name="selected_candidates" value="{{ app.id }}" class="candidate-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                            </td>
+
                             <td class="p-4 font-bold text-slate-400">#{{ forloop.counter }}</td>
                             
                             <td class="p-4">
@@ -53,14 +63,19 @@
                             </td>
 
                             <td class="p-4">
-                                {% if app.status == 'INTERVIEW' %}
-                                    <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold">Interview</span>
-                                {% elif app.status == 'HIRED' %}
-                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold">Hired</span>
+                                {# UPDATED STATUS LOGIC #}
+                                {% if app.status == 'SHORTLISTED' %}
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold border border-green-200">
+                                        Shortlisted for Interview
+                                    </span>
                                 {% elif app.status == 'REJECTED' %}
-                                    <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold">Rejected</span>
+                                    <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold border border-red-200">
+                                        Rejected
+                                    </span>
                                 {% else %}
-                                    <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold">Applied</span>
+                                    <span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold border border-slate-200">
+                                        Applied
+                                    </span>
                                 {% endif %}
                             </td>
 
@@ -83,10 +98,20 @@
                                         <i class="bi bi-eye-fill"></i>
                                     </a>
                                     
+                                    {# NEW: REJECT BUTTON #}
+                                    {% if app.status != 'REJECTED' %}
+                                    <a href="{% url 'web_test:reject_application' app.id %}" 
+                                       onclick="return confirm('Are you sure you want to REJECT {{ app.candidate.full_name }}?');"
+                                       class="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition" 
+                                       title="Reject Candidate">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </a>
+                                    {% endif %}
+                                    
                                     <a href="{% url 'web_test:delete_application' app.id %}" 
-                                       onclick="return confirm('Are you sure you want to permanently delete {{ app.candidate.full_name }}?');"
+                                       onclick="return confirm('Are you sure you want to permanently delete this record?');"
                                        class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" 
-                                       title="Delete Candidate">
+                                       title="Delete Record">
                                         <i class="bi bi-trash-fill"></i>
                                     </a>
                                 </div>
@@ -94,7 +119,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="p-12 text-center text-slate-400 italic">
+                            <td colspan="7" class="p-12 text-center text-slate-400 italic">
                                 No applications found for this job yet.
                             </td>
                         </tr>
@@ -105,4 +130,74 @@
         </div>
     </div>
 </div>
+
+<div id="inviteModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 m-4 animate-fade-in">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-slate-800">Send Interview Invites</h2>
+            <button onclick="closeInviteModal()" class="text-slate-400 hover:text-slate-600">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <form action="{% url 'web_test:bulk_send_invite' %}" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="application_ids" id="modalAppIds">
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                    <input type="date" name="date" required class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Time</label>
+                    <input type="time" name="time" required class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Location / Link</label>
+                <input type="text" name="location" placeholder="e.g., Google Meet or Office Address" required class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Message / Notes</label>
+                <textarea name="message" rows="3" placeholder="Additional instructions..." class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button type="button" onclick="closeInviteModal()" class="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-sm">
+                    Send Invites
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.candidate-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    }
+
+    function openInviteModal() {
+        const checkboxes = document.querySelectorAll('.candidate-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Please select at least one candidate to invite.');
+            return;
+        }
+
+        const ids = Array.from(checkboxes).map(cb => cb.value).join(',');
+        document.getElementById('modalAppIds').value = ids;
+        
+        const modal = document.getElementById('inviteModal');
+        modal.classList.remove('hidden');
+    }
+
+    function closeInviteModal() {
+        document.getElementById('inviteModal').classList.add('hidden');
+    }
+</script>
 {% endblock %}

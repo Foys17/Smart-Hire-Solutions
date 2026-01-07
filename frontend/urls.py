@@ -32,4 +32,5 @@ urlpatterns = [
     path('jobs/<int:job_id>/status/', views.candidate_job_status, name='candidate_job_status'),
     path('application/<int:application_id>/withdraw/', views.withdraw_application, name='withdraw_application'),
     path('tools/cv-builder/', views.cv_builder, name='cv_builder'),
+    path('application/<int:pk>/reject/', views.reject_application, name='reject_application'),
 ]

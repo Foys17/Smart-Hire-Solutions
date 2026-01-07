@@ -7,7 +7,6 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 # --- TAILWIND STYLES CONFIGURATION ---
-# We define them here to keep the code clean and consistent
 INPUT_STYLE = (
     "w-full px-4 py-2 border border-slate-300 rounded-lg "
     "focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 "
@@ -54,11 +53,9 @@ class JobForm(forms.ModelForm):
         desc_text = cleaned_data.get('description_text')
         desc_file = cleaned_data.get('description_file')
 
-        # 1. Validation: Neither provided
         if not desc_text and not desc_file:
             raise forms.ValidationError("You must provide either Job Description Text OR upload a PDF file.")
 
-        # 2. Validation: Both provided
         if desc_text and desc_file:
             raise forms.ValidationError("Please provide ONLY one source: either paste Text OR upload a File, not both.")
 
@@ -75,7 +72,6 @@ class ApplicationForm(forms.ModelForm):
             }),
         }
 
-# 1. Login Form (Standard)
 class UserLoginForm(AuthenticationForm):
     username = forms.EmailField(widget=forms.TextInput(attrs={
         'class': INPUT_STYLE, 
@@ -86,11 +82,10 @@ class UserLoginForm(AuthenticationForm):
         'placeholder': '••••••••'
     }))
 
-# 2. Registration Form (Custom)
 class UserRegistrationForm(UserCreationForm):
     full_name = forms.CharField(widget=forms.TextInput(attrs={
         'class': INPUT_STYLE, 
-        'placeholder': 'John Doe'
+        'placeholder': 'Mahedy Hasan'
     }))
     
     role = forms.ChoiceField(
@@ -109,7 +104,6 @@ class UserRegistrationForm(UserCreationForm):
         }
 
 class HRUploadCVForm(forms.Form):
-    # Candidate Details
     full_name = forms.CharField(max_length=255, widget=forms.TextInput(attrs={
         'class': INPUT_STYLE, 
         'placeholder': 'Candidate Name'
@@ -118,13 +112,9 @@ class HRUploadCVForm(forms.Form):
         'class': INPUT_STYLE, 
         'placeholder': 'candidate@example.com'
     }))
-    
-    # File
     cv_file = forms.FileField(widget=forms.FileInput(attrs={
         'class': FILE_INPUT_STYLE
     }))
-    
-    # Reference Info
     reference_name = forms.CharField(
         required=False, 
         widget=forms.TextInput(attrs={
@@ -133,10 +123,8 @@ class HRUploadCVForm(forms.Form):
         })
     )
 
-
 class InterviewInviteForm(forms.Form):
-    application_ids = forms.CharField(widget=forms.HiddenInput()) # Stores "1,2,5"
-    
+    application_ids = forms.CharField(widget=forms.HiddenInput())
     date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
         label="Interview Date"
@@ -163,9 +151,8 @@ class InterviewInviteForm(forms.Form):
         label="Additional Message"
     )
 
-
-
 class CVBuilderForm(forms.Form):
+    # Removed Experience, Education, Projects textareas to use dynamic list inputs instead
     full_name = forms.CharField(
         label="Full Name", 
         widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Jane Doe'})
@@ -196,22 +183,4 @@ class CVBuilderForm(forms.Form):
     skills = forms.CharField(
         label="Skills (Comma separated)", 
         widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 3, 'placeholder': 'Python, Django, AWS, React...'})
-    )
-    
-    experience = forms.CharField(
-        label="Work Experience", 
-        help_text="Format: Job Title | Company | Dates (New line for details)",
-        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 8, 'placeholder': 'Senior Developer | Tech Co | 2020-Present\n- Led backend team\n- Optimized database queries'})
-    )
-    
-    education = forms.CharField(
-        label="Education", 
-        help_text="Format: Degree | University | Dates",
-        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'B.Sc. Computer Science | University of Tech | 2016-2020'})
-    )
-    
-    projects = forms.CharField(
-        label="Projects (Optional)", 
-        required=False, 
-        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'E-Commerce Platform: Built a full-stack app using Django...'})
     )

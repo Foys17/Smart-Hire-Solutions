@@ -42,36 +42,45 @@
 
                 <div class="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div> 
                 
-                {% if request.user.role == 'HR' %}
+                {# === MODIFIED: Combined HR and Reviewer Actions === #}
+                {% if request.user.role == 'HR' or request.user.role == 'Reviewer' %}
                     <a href="{% url 'web_test:job_ranking' job.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5">
                         <i class="bi bi-trophy-fill"></i> View Rankings
                     </a>
 
                     <div class="flex rounded-lg shadow-sm isolate">
-                        <a href="{% url 'web_test:job_edit' job.id %}" class="relative inline-flex items-center px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-l-lg hover:bg-slate-50 hover:z-10 focus:z-10 transition border-r-0">
+                        {# Edit: Available to both. Adjust rounding if it's the only button (Reviewer) #}
+                        <a href="{% url 'web_test:job_edit' job.id %}" class="relative inline-flex items-center px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-l-lg hover:bg-slate-50 hover:z-10 focus:z-10 transition {% if request.user.role == 'HR' %}border-r-0{% else %}rounded-r-lg{% endif %}">
                             <i class="bi bi-pencil mr-2"></i> Edit
                         </a>
-                        <a href="{% url 'web_test:hr_upload_cv' job.id %}" class="relative inline-flex items-center px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 hover:z-10 focus:z-10 transition">
-                            <i class="bi bi-upload mr-2"></i> Upload CV
-                        </a>
-                        <a href="{% url 'web_test:toggle_job_status' job.id %}" class="relative inline-flex items-center px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-r-lg hover:bg-slate-50 hover:z-10 focus:z-10 transition border-l-0">
-                            {% if job.status == 'OPEN' %} 
-                                <i class="bi bi-lock-fill mr-2"></i> Close 
-                            {% else %} 
-                                <i class="bi bi-unlock-fill mr-2"></i> Re-Open 
-                            {% endif %}
-                        </a>
+
+                        {# HR Only Actions #}
+                        {% if request.user.role == 'HR' %}
+                            <a href="{% url 'web_test:hr_upload_cv' job.id %}" class="relative inline-flex items-center px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 hover:z-10 focus:z-10 transition">
+                                <i class="bi bi-upload mr-2"></i> Upload CV
+                            </a>
+                            <a href="{% url 'web_test:toggle_job_status' job.id %}" class="relative inline-flex items-center px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-r-lg hover:bg-slate-50 hover:z-10 focus:z-10 transition border-l-0">
+                                {% if job.status == 'OPEN' %} 
+                                    <i class="bi bi-lock-fill mr-2"></i> Close 
+                                {% else %} 
+                                    <i class="bi bi-unlock-fill mr-2"></i> Re-Open 
+                                {% endif %}
+                            </a>
+                        {% endif %}
                     </div>
 
+                    {# Delete: Available to both #}
                     <a href="{% url 'web_test:delete_job' job.id %}" class="inline-flex items-center justify-center w-10 h-10 text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-all" title="Delete Job">
                         <i class="bi bi-trash"></i>
                     </a>
 
-                {% elif request.user.role == 'Reviewer' %}
-                    <a href="{% url 'web_test:job_ranking' job.id %}" class="px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition shadow-sm">View Rankings</a>
-                    
+                {# === Candidate / Public View === #}
                 {% else %}
-                    {% if job.status == 'OPEN' %}
+                    {% if request.user.role == 'Candidate' and job.has_applied %}
+                        <button disabled class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-100 text-emerald-700 font-bold rounded-lg cursor-default border border-emerald-200">
+                            <i class="bi bi-check-circle-fill"></i> Applied
+                        </button>
+                    {% elif job.status == 'OPEN' %}
                         <a href="{% url 'web_test:apply_job' job.id %}" class="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg shadow-indigo-200 transition-all hover:shadow-xl hover:-translate-y-0.5 animate-pulse-slow">
                             <span>🚀 Apply Now</span>
                         </a>

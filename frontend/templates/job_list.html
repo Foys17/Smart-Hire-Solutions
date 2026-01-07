@@ -15,7 +15,7 @@
                 </p>
             </div>
             
-            {% if request.user.role == 'HR' %}
+            {% if request.user.is_authenticated and request.user.role == 'HR' %}
             <a href="{% url 'web_test:create_job' %}" class="group inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all transform hover:-translate-y-0.5">
                 <i class="bi bi-plus-lg mr-2 group-hover:rotate-90 transition-transform duration-300"></i> 
                 Post New Job
@@ -75,26 +75,37 @@
                 </a>
 
                 <div class="flex gap-2">
-                    {% if request.user.role == 'Candidate' %}
+                    {% if request.user.is_authenticated %}
+                        {# === LOGGED IN USERS === #}
                         
-                        {% if job.current_user_status %}
-                            <a href="{% url 'web_test:candidate_job_status' job.id %}" class="inline-flex items-center rounded-xl bg-white border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-600 shadow-sm hover:bg-indigo-50 transition-all active:scale-95">
-                                <i class="bi bi-check-circle-fill mr-1.5"></i> Check Status
+                        {% if request.user.role == 'Candidate' %}
+                            {% if job.current_user_status %}
+                                <a href="{% url 'web_test:candidate_job_status' job.id %}" class="inline-flex items-center rounded-xl bg-white border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-600 shadow-sm hover:bg-indigo-50 transition-all active:scale-95">
+                                    <i class="bi bi-check-circle-fill mr-1.5"></i> Check Status
+                                </a>
+                            {% elif job.status == 'OPEN' %}
+                                <a href="{% url 'web_test:apply_job' job.id %}" class="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all active:scale-95">
+                                    Apply Now
+                                </a>
+                            {% endif %}
+                        
+                        {% elif request.user.role == 'HR' %}
+                            <a href="{% url 'web_test:hr_upload_cv' job.id %}" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white text-emerald-600 border border-emerald-200 shadow-sm hover:bg-emerald-50 hover:border-emerald-300 transition-all" title="Upload CV Manually">
+                                <i class="bi bi-upload"></i>
                             </a>
-                        {% elif job.status == 'OPEN' %}
+                            
+                            <a href="{% url 'web_test:job_ranking' job.id %}" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white text-amber-600 border border-amber-200 shadow-sm hover:bg-amber-50 hover:border-amber-300 transition-all" title="View Ranking">
+                                <i class="bi bi-trophy-fill"></i>
+                            </a>
+                        {% endif %}
+
+                    {% else %}
+                        {# === GUEST USERS === #}
+                        {% if job.status == 'OPEN' %}
                             <a href="{% url 'web_test:apply_job' job.id %}" class="inline-flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all active:scale-95">
                                 Apply Now
                             </a>
                         {% endif %}
-                    
-                    {% elif request.user.role == 'HR' %}
-                        <a href="{% url 'web_test:hr_upload_cv' job.id %}" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white text-emerald-600 border border-emerald-200 shadow-sm hover:bg-emerald-50 hover:border-emerald-300 transition-all" title="Upload CV Manually">
-                            <i class="bi bi-upload"></i>
-                        </a>
-                        
-                        <a href="{% url 'web_test:job_ranking' job.id %}" class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white text-amber-600 border border-amber-200 shadow-sm hover:bg-amber-50 hover:border-amber-300 transition-all" title="View Ranking">
-                            <i class="bi bi-trophy-fill"></i>
-                        </a>
                     {% endif %}
                 </div>
             </div>
@@ -111,9 +122,9 @@
             <h3 class="text-xl font-bold text-slate-900">No jobs found</h3>
             <p class="text-slate-500 max-w-md mt-2">
                 There are no listings available right now. 
-                {% if request.user.role == 'HR' %}Get started by posting a new opportunity!{% endif %}
+                {% if request.user.is_authenticated and request.user.role == 'HR' %}Get started by posting a new opportunity!{% endif %}
             </p>
-            {% if request.user.role == 'HR' %}
+            {% if request.user.is_authenticated and request.user.role == 'HR' %}
             <a href="{% url 'web_test:create_job' %}" class="mt-8 inline-flex items-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
                 Create First Job
             </a>

@@ -5,8 +5,7 @@ from jobs.models import Job
 class Application(models.Model):
     STATUS_CHOICES = [
         ('APPLIED', 'Applied'),
-        ('SCREENED', 'Screened'),
-        ('SHORTLISTED', 'Shortlisted'),
+        ('SHORTLISTED', 'Shortlisted for Interview'),
         ('REJECTED', 'Rejected'),
     ]
 
@@ -19,13 +18,11 @@ class Application(models.Model):
     cv_embedding = models.JSONField(default=list, blank=True)
     match_score = models.FloatField(default=0.0)
     
-    # --- NEW FIELDS FOR REFERENCE FEATURE ---
     has_reference = models.BooleanField(default=False)
     reference_name = models.CharField(max_length=255, blank=True, null=True)
-    
-    # --- NEW FIELD FOR INTERVIEW (Optional, for record keeping) ---
     interview_date = models.DateTimeField(null=True, blank=True)
     
+    # Default is Applied.
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='APPLIED')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -33,5 +30,4 @@ class Application(models.Model):
         unique_together = ('job', 'candidate')
 
     def __str__(self):
-        ref_tag = " (Ref)" if self.has_reference else ""
-        return f"{self.candidate.full_name}{ref_tag} -> {self.job.title} ({self.match_score}%)"
+        return f"{self.candidate.full_name} -> {self.job.title} ({self.status})"

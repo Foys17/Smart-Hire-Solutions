@@ -6,9 +6,9 @@ from jobs.models import Job
 from jobs.utils import run_ai_pipeline
 from candidates.models import Application
 from candidates.utils import process_application
-from .forms import JobForm, ApplicationForm, UserLoginForm, UserRegistrationForm, HRUploadCVForm, InterviewInviteForm,CVBuilderForm
+from .forms import JobForm, ApplicationForm, UserLoginForm, UserRegistrationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm
 from .utils import generate_ats_cv
-from django.http import HttpResponseForbidden,FileResponse
+from django.http import HttpResponseForbidden, FileResponse
 from django.core.mail import send_mail
 from django.conf import settings
 import uuid 
@@ -21,12 +21,11 @@ def home(request):
     return render(request, 'home.html')
 
 
-@login_required
 def job_list(request):
-    """Show all jobs. Candidates can apply here."""
+    """Show all jobs. Publicly accessible."""
     jobs = Job.objects.all().order_by('-created_at')
     
-    if request.user.is_authenticated and request.user.role == 'Candidate':
+    if request.user.is_authenticated and getattr(request.user, 'role', '') == 'Candidate':
         my_apps = Application.objects.filter(candidate=request.user)
         status_map = {app.job_id: app.status for app in my_apps}
         for job in jobs:
@@ -54,9 +53,12 @@ def create_job(request):
         form = JobForm()
     return render(request, 'create_job.html', {'form': form})
 
-@login_required
 def apply_for_job(request, job_id):
-    """Candidate: Upload CV."""
+    """Candidate: Upload CV. Redirects to Register if not logged in."""
+    if not request.user.is_authenticated:
+        messages.info(request, "Please register or login to apply for this job.")
+        return redirect('web_test:register')
+
     job = get_object_or_404(Job, pk=job_id)
     
     if Application.objects.filter(candidate=request.user, job=job).exists():
@@ -136,9 +138,15 @@ def logout_view(request):
     return redirect('web_test:login')
 
 
-@login_required
+# REMOVED @login_required to allow public access
 def job_detail(request, pk):
     job = get_object_or_404(Job, pk=pk)
+    
+    # Check application status for logged-in candidates
+    if request.user.is_authenticated and getattr(request.user, 'role', '') == 'Candidate':
+        has_applied = Application.objects.filter(candidate=request.user, job=job).exists()
+        job.has_applied = has_applied
+        
     return render(request, 'job_detail.html', {'job': job})
 
 @login_required
@@ -182,7 +190,7 @@ def delete_job(request, pk):
 def toggle_job_status(request, pk):
     """
     Switches job between OPEN and CLOSED.
-    WARNING: Closing a job deletes all candidates!
+    Closing a job now REJECTS all non-shortlisted candidates instead of deleting them.
     """
     job = get_object_or_404(Job, pk=pk)
     
@@ -192,9 +200,9 @@ def toggle_job_status(request, pk):
 
     if job.status == 'OPEN':
         job.status = 'CLOSED'
-        # --- NEW LOGIC: Delete all applications ---
-        deleted_count, _ = Application.objects.filter(job=job).delete()
-        messages.info(request, f"Job CLOSED. {deleted_count} candidate(s) were removed.")
+        # Update all candidates who are not already rejected to REJECTED
+        count = Application.objects.filter(job=job).exclude(status='REJECTED').update(status='REJECTED')
+        messages.info(request, f"Job CLOSED. {count} active application(s) marked as Rejected.")
     else:
         job.status = 'OPEN'
         messages.success(request, "Job Re-Opened! Candidates can apply again.")
@@ -202,12 +210,8 @@ def toggle_job_status(request, pk):
     job.save()
     return redirect('web_test:job_detail', pk=job.pk)
 
-# --- NEW VIEW: Delete Individual Application ---
 @login_required
 def delete_application(request, pk):
-    """
-    Allows HR to delete a specific candidate application from the ranking list.
-    """
     app = get_object_or_404(Application, pk=pk)
     job_id = app.job.id 
 
@@ -386,20 +390,21 @@ def send_interview_invite(request, application_id):
     application = get_object_or_404(Application, pk=application_id)
     
     if request.user.role != 'HR':
-        messages.error(request, "Access Denied.")
         return redirect('web_test:job_list')
 
     if request.method == 'POST':
         form = InterviewInviteForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            application.status = 'INTERVIEW'
+            
+            # UPDATE STATUS TO SHORTLISTED
+            application.status = 'SHORTLISTED'
             application.save()
 
             subject = f"Interview Invitation: {application.job.title}"
             message_body = (
                 f"Dear {application.candidate.full_name},\n\n"
-                f"We are pleased to invite you for an interview for the position of {application.job.title}.\n\n"
+                f"You have been Shortlisted for an Interview!\n\n"
                 f"📅 Date: {data['date']}\n"
                 f"⏰ Time: {data['time']}\n"
                 f"📍 Location: {data['location']}\n\n"
@@ -413,14 +418,13 @@ def send_interview_invite(request, application_id):
                     settings.EMAIL_HOST_USER or 'noreply@smarthire.com',
                     [application.candidate.email], fail_silently=False,
                 )
-                messages.success(request, f"Invite sent to {application.candidate.full_name}!")
+                messages.success(request, f"Invite sent & Candidate Shortlisted!")
             except Exception as e:
                 messages.error(request, f"Error sending email: {e}")
 
             return redirect('web_test:job_ranking', job_id=application.job.id)
     
     return redirect('web_test:job_ranking', job_id=application.job.id)
-
 
 @login_required
 def bulk_send_invite(request):
@@ -443,12 +447,14 @@ def bulk_send_invite(request):
             errors = []
             
             for app in applications:
-                app.status = 'INTERVIEW'
+                # UPDATED: Set status to SHORTLISTED (Shortlisted for Interview)
+                app.status = 'SHORTLISTED'
                 app.save()
+                
                 subject = f"Interview Invitation: {app.job.title}"
                 message_body = (
                     f"Dear {app.candidate.full_name},\n\n"
-                    f"We are pleased to invite you for an interview.\n\n"
+                    f"You have been Shortlisted for an Interview!\n\n"
                     f"📅 Date: {date}\n"
                     f"⏰ Time: {time}\n"
                     f"📍 Location: {location}\n\n"
@@ -501,6 +507,7 @@ def withdraw_application(request, application_id):
 def cv_builder(request):
     """
     Candidate Tool: Generate an ATS-friendly CV PDF.
+    Updated to handle dynamic fields for Experience, Education, and Projects.
     """
     if request.user.role != 'Candidate':
         messages.error(request, "This tool is for candidates only.")
@@ -509,11 +516,59 @@ def cv_builder(request):
     if request.method == 'POST':
         form = CVBuilderForm(request.POST)
         if form.is_valid():
-            # Generate PDF
-            pdf_buffer = generate_ats_cv(form.cleaned_data)
+            data = form.cleaned_data
+
+            # --- PROCESS DYNAMIC EXPERIENCE FIELDS ---
+            exp_titles = request.POST.getlist('exp_title')
+            exp_companies = request.POST.getlist('exp_company')
+            exp_dates = request.POST.getlist('exp_date')
+            exp_positions = request.POST.getlist('exp_position')
+            
+            data['experience_list'] = []
+            for i in range(len(exp_titles)):
+                if exp_titles[i]: # Only add if title exists
+                    data['experience_list'].append({
+                        'title': exp_titles[i],
+                        'company': exp_companies[i],
+                        'dates': exp_dates[i],
+                        'position': exp_positions[i]
+                    })
+
+            # --- PROCESS DYNAMIC EDUCATION FIELDS ---
+            edu_degrees = request.POST.getlist('edu_degree')
+            edu_colleges = request.POST.getlist('edu_college')
+            edu_dates = request.POST.getlist('edu_date')
+            
+            data['education_list'] = []
+            for i in range(len(edu_degrees)):
+                if edu_degrees[i]:
+                    data['education_list'].append({
+                        'degree': edu_degrees[i],
+                        'college': edu_colleges[i],
+                        'dates': edu_dates[i]
+                    })
+
+            # --- PROCESS DYNAMIC PROJECT FIELDS ---
+            proj_names = request.POST.getlist('proj_name')
+            proj_techs = request.POST.getlist('proj_tech')
+            proj_descs = request.POST.getlist('proj_desc')
+            proj_links = request.POST.getlist('proj_link')
+            
+            data['projects_list'] = []
+            for i in range(len(proj_names)):
+                if proj_names[i]:
+                    data['projects_list'].append({
+                        'name': proj_names[i],
+                        'tech': proj_techs[i],
+                        'desc': proj_descs[i],
+                        'link': proj_links[i]
+                    })
+
+            # Generate PDF with structured data
+            pdf_buffer = generate_ats_cv(data)
             
             # Return as Downloadable File
-            filename = f"{form.cleaned_data['full_name'].replace(' ', '_')}_CV.pdf"
+            filename = f"{data['full_name'].replace(' ', '_')}_CV.pdf"
             return FileResponse(
                 pdf_buffer, 
                 as_attachment=True, 
@@ -529,3 +584,39 @@ def cv_builder(request):
         form = CVBuilderForm(initial=initial_data)
 
     return render(request, 'cv_builder.html', {'form': form})
+
+
+@login_required
+def delete_job(request, pk):
+    job = get_object_or_404(Job, pk=pk)
+    
+    # UPDATED: Allow HR and Reviewer to delete
+    if request.user.role not in ['HR', 'Reviewer']:
+        messages.error(request, "Access Denied.")
+        return redirect('web_test:job_list')
+        
+    if request.method == 'POST':
+        title = job.title
+        job.delete()
+        messages.success(request, f"Job '{title}' has been deleted.")
+        return redirect('web_test:job_list')
+    
+    return render(request, 'delete_job_confirm.html', {'job': job})
+
+
+@login_required
+def reject_application(request, pk):
+    """
+    Mark a candidate as Rejected.
+    """
+    app = get_object_or_404(Application, pk=pk)
+    
+    if request.user.role != 'HR':
+        messages.error(request, "Access Denied.")
+        return redirect('web_test:job_list')
+
+    app.status = 'REJECTED'
+    app.save()
+    messages.info(request, f"Candidate {app.candidate.full_name} has been rejected.")
+    
+    return redirect('web_test:job_ranking', job_id=app.job.id)
