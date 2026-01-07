@@ -147,13 +147,17 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend/static'),
 ]
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Base url to serve media files
 MEDIA_URL = '/media/'
 # Path where media is stored
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# --- SECURITY SETTINGS FOR IFRAME (PDF VIEWING) ---
+# This allows the PDF to be displayed inside the iframe on the same site
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # --- EMAIL CONFIGURATION ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -182,7 +186,7 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Redirects
-LOGIN_REDIRECT_URL = 'web_test:dashboard'
+LOGIN_REDIRECT_URL = 'web_test:job_list' 
 LOGOUT_REDIRECT_URL = 'web_test:home'
 
 # --- Allauth Configuration for Custom User Model ---

@@ -13,7 +13,6 @@
                     class="w-full h-full object-cover opacity-70 hover:scale-105 transition-transform duration-[40s]">
                 <div class="absolute inset-0 bg-gradient-to-t from-indigo-900/90 via-indigo-900/40 to-slate-900/30"></div>
             </div>
-
             <div class="absolute bottom-72 left-12 right-12 z-10 text-white">
                 <div class="mb-6 w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg">
                     <i class="bi bi-cpu-fill text-3xl text-indigo-300"></i>
@@ -41,7 +40,18 @@
                     {% for field in form %}
                     <div class="group">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">{{ field.label }}</label>
-                        {{ field }}
+                        
+                        <div class="relative">
+                            {{ field }}
+                            
+                            {# --- NEW: Password Toggle Button --- #}
+                            {% if field.name == 'password' %}
+                            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 p-1 focus:outline-none">
+                                <i class="bi bi-eye-fill text-lg" id="passwordToggleIcon"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+
                         {% if field.errors %}
                             <p class="mt-2 text-xs text-red-500 flex items-center gap-1 font-medium">
                                 <i class="bi bi-exclamation-circle-fill"></i> {{ field.errors.0 }}
@@ -98,6 +108,8 @@
         display: block;
         width: 100%;
         padding: 0.875rem 1rem;
+        /* Padding right increased to accommodate the eye icon */
+        padding-right: 2.5rem; 
         font-size: 0.95rem;
         font-weight: 500;
         color: #1e293b;
@@ -119,4 +131,25 @@
         border-color: #cbd5e1;
     }
 </style>
+
+<script>
+    function togglePasswordVisibility() {
+        // Find the password input (it's in the loop, so we find it by type usually, or ID if generated)
+        // Since Django generates IDs like id_password, we can try that first
+        const passwordInput = document.getElementById('id_password');
+        const icon = document.getElementById('passwordToggleIcon');
+        
+        if (passwordInput) {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('bi-eye-fill');
+                icon.classList.add('bi-eye-slash-fill');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('bi-eye-slash-fill');
+                icon.classList.add('bi-eye-fill');
+            }
+        }
+    }
+</script>
 {% endblock %}

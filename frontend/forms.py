@@ -162,3 +162,56 @@ class InterviewInviteForm(forms.Form):
         required=False,
         label="Additional Message"
     )
+
+
+
+class CVBuilderForm(forms.Form):
+    full_name = forms.CharField(
+        label="Full Name", 
+        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Jane Doe'})
+    )
+    email = forms.EmailField(
+        label="Email", 
+        widget=forms.EmailInput(attrs={'class': INPUT_STYLE, 'placeholder': 'jane@example.com'})
+    )
+    phone = forms.CharField(
+        label="Phone Number", 
+        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': '+1 234 567 890'})
+    )
+    location = forms.CharField(
+        label="Location", 
+        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'City, Country'})
+    )
+    linkedin = forms.URLField(
+        label="LinkedIn URL", 
+        required=False, 
+        widget=forms.URLInput(attrs={'class': INPUT_STYLE, 'placeholder': 'https://linkedin.com/in/jane'})
+    )
+    
+    summary = forms.CharField(
+        label="Professional Summary", 
+        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'Brief overview of your skills and experience...'})
+    )
+    
+    skills = forms.CharField(
+        label="Skills (Comma separated)", 
+        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 3, 'placeholder': 'Python, Django, AWS, React...'})
+    )
+    
+    experience = forms.CharField(
+        label="Work Experience", 
+        help_text="Format: Job Title | Company | Dates (New line for details)",
+        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 8, 'placeholder': 'Senior Developer | Tech Co | 2020-Present\n- Led backend team\n- Optimized database queries'})
+    )
+    
+    education = forms.CharField(
+        label="Education", 
+        help_text="Format: Degree | University | Dates",
+        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'B.Sc. Computer Science | University of Tech | 2016-2020'})
+    )
+    
+    projects = forms.CharField(
+        label="Projects (Optional)", 
+        required=False, 
+        widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'E-Commerce Platform: Built a full-stack app using Django...'})
+    )

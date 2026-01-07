@@ -31,7 +31,7 @@
             </div>
             <div class="p-8">
                 <div class="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center hover:bg-slate-50 hover:border-indigo-400 transition-colors group relative">
-                    <input type="file" name="bulk_cvs" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                    <input type="file" id="bulk_file_input" name="bulk_cvs" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                     
                     <div class="flex flex-col items-center gap-2">
                         <div class="h-12 w-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
@@ -40,6 +40,15 @@
                         <h4 class="font-bold text-slate-700">Drop multiple files here</h4>
                         <p class="text-xs text-slate-400">System will auto-name candidates</p>
                     </div>
+                </div>
+
+                <div id="file-preview-area" class="mt-6 hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Selected Files <span id="file-count" class="bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded ml-1">0</span></h4>
+                        <button type="button" onclick="clearAllFiles()" class="text-[10px] text-red-500 hover:underline font-bold">Clear All</button>
+                    </div>
+                    <ul id="file-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        </ul>
                 </div>
             </div>
         </div>
@@ -105,14 +114,96 @@
 </div>
 
 <script>
+    // --- ADVANCED FILE MANAGEMENT LOGIC ---
+    const fileInput = document.getElementById('bulk_file_input');
+    const previewArea = document.getElementById('file-preview-area');
+    const fileList = document.getElementById('file-list');
+    const fileCountSpan = document.getElementById('file-count');
+
+    // We use a DataTransfer object to hold the files because it allows manipulation
+    const dt = new DataTransfer();
+
+    fileInput.addEventListener('change', function(e) {
+        const newFiles = e.target.files;
+
+        for (let i = 0; i < newFiles.length; i++) {
+            const file = newFiles[i];
+            
+            // Prevent Duplicates by name
+            let exists = false;
+            for (let j = 0; j < dt.items.length; j++) {
+                if (dt.items[j].getAsFile().name === file.name) {
+                    exists = true;
+                    break;
+                }
+            }
+            
+            if (!exists) {
+                dt.items.add(file);
+            }
+        }
+
+        // Sync the DataTransfer back to the input
+        fileInput.files = dt.files;
+        
+        // Render
+        updatePreview();
+    });
+
+    function updatePreview() {
+        fileList.innerHTML = ''; // Clear list
+        const files = dt.files;
+        fileCountSpan.textContent = files.length;
+
+        if (files.length > 0) {
+            previewArea.classList.remove('hidden');
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg animate-fade-in-down group/item hover:border-red-200 hover:bg-red-50/30 transition-colors';
+                li.innerHTML = `
+                    <div class="w-8 h-8 rounded bg-white border border-slate-100 flex items-center justify-center text-indigo-500 shadow-sm shrink-0 group-hover/item:text-red-400">
+                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-slate-700 truncate" title="${file.name}">${file.name}</p>
+                        <p class="text-[10px] text-slate-400 font-medium">${fileSize} MB</p>
+                    </div>
+                    <button type="button" onclick="removeFile(${i})" class="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-white rounded-full transition-all" title="Remove File">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                `;
+                fileList.appendChild(li);
+            }
+        } else {
+            previewArea.classList.add('hidden');
+        }
+    }
+
+    // Global function to remove specific file
+    window.removeFile = function(index) {
+        dt.items.remove(index);
+        fileInput.files = dt.files;
+        updatePreview();
+    }
+
+    // Global function to clear all
+    window.clearAllFiles = function() {
+        dt.items.clear();
+        fileInput.files = dt.files;
+        updatePreview();
+    }
+
+
+    // --- ROW LOGIC (UNCHANGED) ---
     function addCandidateRow() {
         const container = document.getElementById('candidates-container');
         const firstRow = container.querySelector('.candidate-row');
         const newRow = firstRow.cloneNode(true);
-        
-        // Clear values
         newRow.querySelectorAll('input').forEach(input => input.value = '');
-        
         container.appendChild(newRow);
     }
 

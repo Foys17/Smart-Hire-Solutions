@@ -10,3 +10,4 @@ numpy
 django-allauth
 cryptography
 python-dotenv
+reportlab
