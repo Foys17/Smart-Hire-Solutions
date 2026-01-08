@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-slate-800">Employee Directory</h1>
+        <a href="{% url 'web_test:add_employee' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+            <i class="bi bi-person-plus-fill mr-2"></i>Add Employee
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-600">Name</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-600">Department</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-600">Designation</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-600">Joined</th>
+                    <th class="px-6 py-4 text-sm font-semibold text-slate-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for emp in employees %}
+                <tr class="hover:bg-slate-50/50">
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-slate-900">{{ emp.user.full_name }}</div>
+                        <div class="text-xs text-slate-500">{{ emp.user.email }}</div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-600">{{ emp.department }}</td>
+                    <td class="px-6 py-4 text-slate-600"><span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-semibold">{{ emp.designation }}</span></td>
+                    <td class="px-6 py-4 text-slate-600">{{ emp.joining_date|date:"M d, Y" }}</td>
+                    <td class="px-6 py-4">
+                        <button class="text-slate-400 hover:text-indigo-600"><i class="bi bi-pencil-square"></i></button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">No employees found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -6,12 +6,14 @@ from jobs.models import Job
 from jobs.utils import run_ai_pipeline
 from candidates.models import Application
 from candidates.utils import process_application
-from .forms import JobForm, ApplicationForm, UserLoginForm, UserRegistrationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm
+from .forms import JobForm, ApplicationForm, UserLoginForm, UserRegistrationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm,EmployeeCreationForm, PayrollForm, LeaveRequestForm
 from .utils import generate_ats_cv
 from django.http import HttpResponseForbidden, FileResponse
 from django.core.mail import send_mail
 from django.conf import settings
 import uuid 
+from employees.models import Employee, Payroll, LeaveRequest
+
 
 User = get_user_model()
 
@@ -620,3 +622,121 @@ def reject_application(request, pk):
     messages.info(request, f"Candidate {app.candidate.full_name} has been rejected.")
     
     return redirect('web_test:job_ranking', job_id=app.job.id)
+
+
+
+
+# --- EMPLOYEE MANAGEMENT (HR) ---
+@login_required
+def employee_list(request):
+    if request.user.role not in ['HR', 'Admin']:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+    
+    employees = Employee.objects.all().select_related('user')
+    return render(request, 'employees/employee_list.html', {'employees': employees})
+
+@login_required
+def add_employee(request):
+    if request.user.role not in ['HR', 'Admin']:
+        return redirect('web_test:home')
+
+    if request.method == 'POST':
+        form = EmployeeCreationForm(request.POST)
+        if form.is_valid():
+            # Create User
+            email = form.cleaned_data['email']
+            password = form.cleaned_data['password']
+            name = form.cleaned_data['full_name']
+            
+            try:
+                user = User.objects.create_user(email=email, password=password, full_name=name, role='Employee')
+                
+                # Create Employee Profile
+                employee = form.save(commit=False)
+                employee.user = user
+                employee.save()
+                
+                # Send Email
+                send_mail(
+                    'Your Employee Account',
+                    f'Login with Email: {email}\nPassword: {password}',
+                    settings.EMAIL_HOST_USER,
+                    [email],
+                    fail_silently=True
+                )
+                messages.success(request, "Employee created and email sent!")
+                return redirect('web_test:employee_list')
+            except Exception as e:
+                messages.error(request, f"Error: {e}")
+    else:
+        form = EmployeeCreationForm()
+    
+    return render(request, 'employees/add_employee.html', {'form': form})
+
+# --- PAYROLL (HR & EMPLOYEE) ---
+@login_required
+def payroll_dashboard(request):
+    # HR sees all, Employee sees their own
+    if request.user.role in ['HR', 'Admin']:
+        payrolls = Payroll.objects.all().order_by('-month')
+        form = PayrollForm() # For the modal/add section
+        
+        if request.method == 'POST':
+            form = PayrollForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Payroll record created.")
+                return redirect('web_test:payroll_dashboard')
+                
+    elif request.user.role == 'Employee':
+        if not hasattr(request.user, 'employee_profile'):
+            messages.error(request, "Employee profile not found.")
+            return redirect('web_test:home')
+        payrolls = Payroll.objects.filter(employee=request.user.employee_profile).order_by('-month')
+        form = None
+    else:
+        return redirect('web_test:home')
+
+    return render(request, 'employees/payroll.html', {'payrolls': payrolls, 'form': form})
+
+# --- LEAVES ---
+@login_required
+def leave_dashboard(request):
+    user = request.user
+    form = LeaveRequestForm()
+
+    # Handle Leave Application (Employee)
+    if request.method == 'POST' and 'apply_leave' in request.POST:
+        if user.role != 'Employee':
+            messages.error(request, "Only employees can apply for leave.")
+        else:
+            form = LeaveRequestForm(request.POST)
+            if form.is_valid():
+                leave = form.save(commit=False)
+                leave.employee = user.employee_profile
+                leave.save()
+                messages.success(request, "Leave request sent!")
+                return redirect('web_test:leave_dashboard')
+
+    # Handle Status Update (HR)
+    if request.method == 'POST' and 'update_status' in request.POST:
+        if user.role in ['HR', 'Admin']:
+            leave_id = request.POST.get('leave_id')
+            status = request.POST.get('status')
+            leave = get_object_or_404(LeaveRequest, id=leave_id)
+            leave.status = status
+            leave.reviewed_by = user
+            leave.save()
+            messages.success(request, f"Leave marked as {status}")
+            return redirect('web_test:leave_dashboard')
+
+    # Data Fetching
+    if user.role in ['HR', 'Admin']:
+        leaves = LeaveRequest.objects.all().order_by('-start_date')# Assuming you add created_at or sort by start_date
+    elif user.role == 'Employee':
+        leaves = LeaveRequest.objects.filter(employee=user.employee_profile).order_by('-start_date')
+    else:
+        leaves = []
+
+    return render(request, 'employees/leaves.html', {'leaves': leaves, 'form': form})

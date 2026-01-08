@@ -3,6 +3,8 @@ from jobs.models import Job
 from candidates.models import Application
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
+from employees.models import Employee, Payroll, LeaveRequest
+
 
 User = get_user_model()
 
@@ -184,3 +186,42 @@ class CVBuilderForm(forms.Form):
         label="Skills (Comma separated)", 
         widget=forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 3, 'placeholder': 'Python, Django, AWS, React...'})
     )
+
+
+class EmployeeCreationForm(forms.ModelForm):
+    full_name = forms.CharField(max_length=255, required=True, widget=forms.TextInput(attrs={'class': 'w-full rounded-lg border-slate-300'}))
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class': 'w-full rounded-lg border-slate-300'}))
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'w-full rounded-lg border-slate-300'}))
+    
+    class Meta:
+        model = Employee
+        fields = ['department', 'designation', 'phone_number']
+        widgets = {
+            'department': forms.TextInput(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+            'designation': forms.TextInput(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+            'phone_number': forms.TextInput(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+        }
+
+class PayrollForm(forms.ModelForm):
+    class Meta:
+        model = Payroll
+        fields = ['employee', 'month', 'basic_salary', 'bonuses', 'deductions', 'is_paid']
+        widgets = {
+            'employee': forms.Select(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+            'month': forms.DateInput(attrs={'type': 'date', 'class': 'w-full rounded-lg border-slate-300'}),
+            'basic_salary': forms.NumberInput(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+            'bonuses': forms.NumberInput(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+            'deductions': forms.NumberInput(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+            'is_paid': forms.CheckboxInput(attrs={'class': 'rounded text-indigo-600 focus:ring-indigo-500'}),
+        }
+
+class LeaveRequestForm(forms.ModelForm):
+    class Meta:
+        model = LeaveRequest
+        fields = ['leave_type', 'start_date', 'end_date', 'reason']
+        widgets = {
+            'leave_type': forms.Select(attrs={'class': 'w-full rounded-lg border-slate-300'}),
+            'start_date': forms.DateInput(attrs={'type': 'date', 'class': 'w-full rounded-lg border-slate-300'}),
+            'end_date': forms.DateInput(attrs={'type': 'date', 'class': 'w-full rounded-lg border-slate-300'}),
+            'reason': forms.Textarea(attrs={'rows': 3, 'class': 'w-full rounded-lg border-slate-300'}),
+        }

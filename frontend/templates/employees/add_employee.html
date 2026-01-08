@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">Add New Employee</h2>
+        <p class="text-slate-500 mb-6">Create an account and profile. Login details will be emailed automatically.</p>
+        
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                    {{ form.full_name }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    {{ form.email }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Temporary Password</label>
+                {{ form.password }}
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                    {{ form.department }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Designation</label>
+                    {{ form.designation }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                {{ form.phone_number }}
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition font-medium mt-4">
+                Create Employee Account
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -48,6 +48,7 @@
                         <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Jobs</span>
                     </a>
 
+                    {# --- CANDIDATE TOOLS --- #}
                     {% if request.user.role == 'Candidate' %}
                     <div class="pt-4 pb-1">
                         <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider sidebar-text fade-transition">Tools</p>
@@ -58,6 +59,7 @@
                     </a>
                     {% endif %}
 
+                    {# --- HR RECRUITMENT TOOLS --- #}
                     {% if request.user.role == 'HR' %}
                     <div class="pt-4 pb-1">
                         <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider sidebar-text fade-transition">Recruitment</p>
@@ -67,6 +69,41 @@
                         <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Post New Job</span>
                     </a>
                     {% endif %}
+
+                    {# --- HR/ADMIN: EMPLOYEE MANAGEMENT --- #}
+                    {% if request.user.role == 'HR' or request.user.role == 'Admin' %}
+                    <div class="pt-4 pb-1">
+                        <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider sidebar-text fade-transition">Employee Mgmt</p>
+                    </div>
+                    <a href="{% url 'web_test:employee_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-people text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Employees</span>
+                    </a>
+                    <a href="{% url 'web_test:payroll_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-cash-stack text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Payroll</span>
+                    </a>
+                    <a href="{% url 'web_test:leave_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-calendar-check text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Leave Requests</span>
+                    </a>
+                    {% endif %}
+
+                    {# --- EMPLOYEE: PERSONAL WORKSPACE --- #}
+                    {% if request.user.role == 'Employee' %}
+                    <div class="pt-4 pb-1">
+                        <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider sidebar-text fade-transition">My Workspace</p>
+                    </div>
+                    <a href="{% url 'web_test:leave_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-calendar-plus text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">My Leaves</span>
+                    </a>
+                     <a href="{% url 'web_test:payroll_dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-receipt text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">My Payslips</span>
+                    </a>
+                    {% endif %}
+
                 </nav>
 
                 <div class="border-t border-slate-200 p-3 bg-slate-50/50 shrink-0">

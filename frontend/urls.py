@@ -33,4 +33,9 @@ urlpatterns = [
     path('application/<int:application_id>/withdraw/', views.withdraw_application, name='withdraw_application'),
     path('tools/cv-builder/', views.cv_builder, name='cv_builder'),
     path('application/<int:pk>/reject/', views.reject_application, name='reject_application'),
+    # Employee Module
+    path('employees/', views.employee_list, name='employee_list'),
+    path('employees/add/', views.add_employee, name='add_employee'),
+    path('payroll/', views.payroll_dashboard, name='payroll_dashboard'),
+    path('leaves/', views.leave_dashboard, name='leave_dashboard'),
 ]
