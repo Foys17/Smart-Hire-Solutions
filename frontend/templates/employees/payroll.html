@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="max-w-6xl mx-auto">
+{# Added 'mb-24' for footer spacing #}
+<div class="max-w-6xl mx-auto mb-24">
     
     {% if request.user.role == 'HR' %}
     <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100 mb-8">

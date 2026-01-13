@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+{# Added 'mb-24' for footer spacing #}
+<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-24">
     
     {% if request.user.role == 'Employee' %}
     <div class="lg:col-span-1">
