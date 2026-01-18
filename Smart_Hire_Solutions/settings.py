@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv  # Import python-dotenv
+from django.urls import reverse_lazy
+from django.templatetags.static import static
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +24,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 INSTALLED_APPS = [
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -203,3 +206,68 @@ ACCOUNT_USERNAME_REQUIRED = False
 
 # Allow social login on standard link click (Bypasses the "Process" page)
 SOCIALACCOUNT_LOGIN_ON_GET = True
+
+
+
+
+
+UNFOLD = {
+    "SITE_TITLE": "Smart Hire Admin",
+    "SITE_HEADER": "Smart Hire Solutions",
+    # "SITE_ICON": {...} # Keep your icon config if you have it
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Recruitment",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Jobs",
+                        "icon": "work",
+                        # Fix: Use reverse_lazy
+                        "link": reverse_lazy("admin:jobs_job_changelist"), 
+                    },
+                    {
+                        "title": "Applications",
+                        "icon": "assignment_ind",
+                        "link": reverse_lazy("admin:candidates_application_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "Organization",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Employees",
+                        "icon": "groups",
+                        "link": reverse_lazy("admin:employees_employee_changelist"),
+                    },
+                    {
+                        "title": "Payroll",
+                        "icon": "payments",
+                        "link": reverse_lazy("admin:employees_payroll_changelist"),
+                    },
+                    {
+                        "title": "Leaves",
+                        "icon": "event_busy",
+                        "link": reverse_lazy("admin:employees_leaverequest_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": "System",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "person",
+                        "link": reverse_lazy("admin:users_user_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+}

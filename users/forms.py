@@ -3,12 +3,12 @@ from .models import User
 from django import forms
 
 class CustomUserCreationForm(UserCreationForm):
-    password_1 = forms.CharField(
+    password1 = forms.CharField(
         label="Password",
         widget=forms.PasswordInput,
         strip=False,
     )
-    password_2 = forms.CharField(
+    password2 = forms.CharField(
         label="Password confirmation",
         widget=forms.PasswordInput,
         strip=False,
@@ -22,7 +22,7 @@ class CustomUserCreationForm(UserCreationForm):
     def save(self, commit=True):
         # Save the provided password in hashed format
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password_1"])
+        user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
         return user

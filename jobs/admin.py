@@ -1,8 +1,9 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 from .models import Job
 
 @admin.register(Job)
-class JobAdmin(admin.ModelAdmin):
+class JobAdmin(ModelAdmin):
     # Columns shown in the list view
     list_display = ('title', 'posted_by', 'status', 'created_at', 'has_file')
     
@@ -12,20 +13,15 @@ class JobAdmin(admin.ModelAdmin):
     # Search box functionality
     search_fields = ('title', 'description_text', 'posted_by__email')
     
-    # Prevent accidental editing of AI-generated data
-    readonly_fields = ('processed_text', 'gliner_entities', 'jina_embedding', 'created_at', 'updated_at')
 
     # Organize the detail view nicely
     fieldsets = (
         ('Job Details', {
             'fields': ('title', 'posted_by', 'status', 'description_text', 'description_file')
         }),
-        ('AI Processing', {
-            'classes': ('collapse',),  # Collapsible section
+        ('AI Processing (Editable)', {
+            'classes': ('collapse',),
             'fields': ('processed_text', 'gliner_entities', 'jina_embedding')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at')
         }),
     )
 

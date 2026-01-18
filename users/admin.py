@@ -1,16 +1,20 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from unfold.admin import ModelAdmin
 from .models import User
-from .forms import CustomUserCreationForm, CustomUserChangeForm  # <--- Import your new forms
+from .forms import CustomUserCreationForm, CustomUserChangeForm
 
-class CustomUserAdmin(UserAdmin):
+@admin.register(User)
+class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
     add_form = CustomUserCreationForm 
     form = CustomUserChangeForm
     model = User
     ordering = ['email']
     list_display = ['email', 'full_name', 'role', 'is_staff', 'is_active']
+    list_filter = ('role', 'is_staff', 'is_active', 'groups')
+    search_fields = ('email', 'full_name')
     
-    # Used for the "Edit User" page
+    # Layout for "Edit User"
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal Info', {'fields': ('full_name', 'role')}),
@@ -18,12 +22,10 @@ class CustomUserAdmin(UserAdmin):
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
 
-    # Used for the "Add User" page
+    # Layout for "Add User" (Must match forms.py fields exactly!)
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'full_name', 'role', 'password_1', 'password_2'),
+            'fields': ('email', 'full_name', 'role', 'password1', 'password2'),
         }),
     )
-
-admin.site.register(User, CustomUserAdmin)

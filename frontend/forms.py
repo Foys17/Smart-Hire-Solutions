@@ -90,20 +90,23 @@ class UserRegistrationForm(UserCreationForm):
         'placeholder': 'Mahedy Hasan'
     }))
     
-    role = forms.ChoiceField(
-        choices=User.Roles.choices, 
-        widget=forms.Select(attrs={'class': SELECT_STYLE})
-    )
 
     class Meta:
         model = User
-        fields = ('email', 'full_name', 'role')
+        fields = ('email', 'full_name')
         widgets = {
             'email': forms.EmailInput(attrs={
                 'class': INPUT_STYLE, 
                 'placeholder': 'name@company.com'
             }),
         }
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = User.Roles.CANDIDATE
+        if commit:
+            user.save()
+        return user
 
 class HRUploadCVForm(forms.Form):
     full_name = forms.CharField(max_length=255, widget=forms.TextInput(attrs={

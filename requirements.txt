@@ -11,3 +11,4 @@ django-allauth
 cryptography
 python-dotenv
 reportlab
+django-unfold

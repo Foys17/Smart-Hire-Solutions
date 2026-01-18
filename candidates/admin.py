@@ -1,9 +1,9 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 from .models import Application
 
 @admin.register(Application)
-class ApplicationAdmin(admin.ModelAdmin):
-    # Columns shown in the list view
+class ApplicationAdmin(ModelAdmin):
     list_display = (
         'candidate_name', 
         'job_title', 
@@ -12,11 +12,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'has_reference', 
         'created_at'
     )
-    
-    # Sidebar filters
     list_filter = ('job', 'status', 'has_reference', 'created_at')
-    
-    # Search by candidate name, email, or job title
     search_fields = (
         'candidate__full_name', 
         'candidate__email', 
@@ -24,14 +20,6 @@ class ApplicationAdmin(admin.ModelAdmin):
         'reference_name'
     )
     
-    # Read-only AI data
-    readonly_fields = (
-        'cv_text_content', 
-        'extracted_data', 
-        'cv_embedding', 
-        'match_score', 
-        'created_at'
-    )
 
     fieldsets = (
         ('Application Info', {
@@ -43,13 +31,12 @@ class ApplicationAdmin(admin.ModelAdmin):
         ('Interview Details', {
             'fields': ('interview_date',)
         }),
-        ('AI Analysis', {
+        ('AI Analysis (Editable)', {
             'classes': ('collapse',),
             'fields': ('match_score', 'extracted_data', 'cv_text_content', 'cv_embedding')
         }),
     )
 
-    # Custom helpers for the list view
     def candidate_name(self, obj):
         return obj.candidate.full_name
     candidate_name.short_description = 'Candidate'
