@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
+    
+    <div class="relative py-12 mb-12 text-center">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-indigo-500/20 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
+
+        
+        <h1 class="text-4xl md:text-5xl font-display font-bold text-slate-900 mb-4 tracking-tight">
+            Global Talent <span class="text-indigo-600">Pool</span>
+        </h1>
+        
+        <p class="text-lg text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+            Search across your entire history of candidates. Find the perfect match instantly.
+        </p>
+        
+        <div class="max-w-2xl mx-auto relative z-20">
+            
+            <div class="flex justify-center mb-6">
+                <div class="bg-slate-100 p-1 rounded-full inline-flex relative shadow-inner">
+                    <button id="tab-keyword" onclick="switchSearch('keyword')" 
+                        class="px-6 py-2 rounded-full text-sm font-bold transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                        <i class="bi bi-fonts mr-2"></i>Keyword Search
+                    </button>
+                    <button id="tab-file" onclick="switchSearch('file')" 
+                        class="px-6 py-2 rounded-full text-sm font-bold transition-all duration-200 text-slate-500 hover:text-slate-700">
+                        <i class="bi bi-file-earmark-pdf mr-2"></i>Upload JD
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-2 rounded-[2rem] shadow-xl border border-slate-100 relative overflow-hidden">
+                
+                <div id="search-keyword-mode" class="transition-opacity duration-300">
+                    <form method="get" class="relative group">
+                        
+                        <input type="text" name="q" value="{{ query }}" 
+                            class="block w-full pl-12 pr-32 py-4 bg-white border-0 rounded-[1.5rem] text-slate-900 text-lg placeholder-slate-400 focus:ring-0 focus:outline-none" 
+                            placeholder="e.g. 'Senior Python Developer'...">
+                        
+                        <button type="submit" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-6 rounded-[1.2rem] font-bold text-sm hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                            Search
+                        </button>
+                    </form>
+                </div>
+
+                <div id="search-file-mode" class="hidden transition-opacity duration-300">
+                    <form method="post" enctype="multipart/form-data" class="relative group">
+                        {% csrf_token %}
+                        <label class="flex items-center justify-between w-full p-2 cursor-pointer">
+                            <div class="flex items-center gap-4 pl-4">
+                                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                    <i class="bi bi-cloud-upload-fill text-xl"></i>
+                                </div>
+                                <div class="text-left">
+                                    <p class="font-semibold text-slate-900 text-sm">Click to Upload Job Description</p>
+                                    <p class="text-xs text-slate-500">Supports PDF format only</p>
+                                </div>
+                            </div>
+                            
+                            <input type="file" name="jd_file" accept=".pdf" class="hidden" onchange="this.form.submit()">
+                            
+                            <span class="bg-slate-100 text-slate-600 px-6 py-3 rounded-[1.2rem] font-bold text-sm group-hover:bg-slate-200 transition-colors">
+                                Browse File
+                            </span>
+                        </label>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+
+        {% if query %}
+        <p class="mt-6 text-sm text-slate-500 animate-fade-in">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm">
+                <i class="bi bi-check-circle-fill text-green-500"></i>
+                Showing results for: <span class="font-bold text-slate-800">"{{ query|truncatechars:40 }}"</span>
+            </span>
+        </p>
+        {% endif %}
+    </div>
+
+    {% if results %}
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i class="bi bi-trophy-fill text-yellow-500"></i> Top Matches
+            </h2>
+            <span class="text-sm text-slate-500 font-medium bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                {{ results|length }} Candidates Found
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in results %}
+            <div class="group bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-indigo-100 transition-all duration-300 flex flex-col relative overflow-hidden">
+                
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                <div class="flex justify-between items-start mb-5">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg border border-indigo-100 shadow-inner shrink-0">
+                            {{ item.candidate_name|first|upper }}
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="font-bold text-lg text-slate-900 truncate" title="{{ item.candidate_name }}">
+                                {{ item.candidate_name }}
+                            </h3>
+                            <p class="text-sm text-slate-500 truncate max-w-[180px]" title="{{ item.email }}">
+                                {{ item.email }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-end shrink-0">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg 
+                            {% if item.score >= 80 %} bg-emerald-50 text-emerald-700 border border-emerald-100
+                            {% elif item.score >= 50 %} bg-amber-50 text-amber-700 border border-amber-100
+                            {% else %} bg-slate-50 text-slate-600 border border-slate-100 {% endif %} text-xs font-bold">
+                            <i class="bi bi-stars"></i> {{ item.score }}%
+                        </span>
+                        <span class="text-[10px] text-slate-400 mt-1">Match Score</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100 group-hover:bg-indigo-50/30 group-hover:border-indigo-100 transition-colors">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Source</p>
+                    <div class="flex items-center gap-2 text-slate-700 font-medium truncate">
+                        <i class="bi bi-archive text-indigo-500"></i>
+                        <span class="truncate" title="From job: {{ item.original_job }}">Applied to: {{ item.original_job }}</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-auto pt-4 border-t border-slate-100">
+                    <a href="{% url 'web_test:application_detail' item.app.id %}" class="flex-1 inline-flex justify-center items-center py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                        Profile
+                    </a>
+                    
+                    <a href="{% url 'web_test:invite_candidate' item.app.id %}" 
+                    onclick="return confirm('Send invitation email to {{ item.candidate_name }}?')"
+                    class="flex-1 inline-flex justify-center items-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-indigo-600 transition-all shadow-sm hover:shadow-md">
+                        <span>Invite</span>
+                        <i class="bi bi-send-fill text-xs"></i>
+                    </a>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+    
+    {% elif query %}
+        <div class="max-w-lg mx-auto text-center py-20">
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-slate-100">
+                <i class="bi bi-search text-3xl text-slate-300"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-2">No candidates found</h3>
+            <p class="text-slate-500">
+                Try using different keywords or uploading a simpler Job Description.
+            </p>
+        </div>
+    {% else %}
+         <div class="max-w-lg mx-auto text-center py-12 opacity-50">
+            <i class="bi bi-people text-6xl text-slate-200 mb-4 block"></i>
+            <p class="text-slate-400">Search by Skill or Upload a Job Description PDF.</p>
+        </div>
+    {% endif %}
+
+</div>
+
+<script>
+    function switchSearch(mode) {
+        const keywordTab = document.getElementById('tab-keyword');
+        const fileTab = document.getElementById('tab-file');
+        const keywordForm = document.getElementById('search-keyword-mode');
+        const fileForm = document.getElementById('search-file-mode');
+
+        // Styles for Active vs Inactive
+        const activeClass = ['bg-white', 'text-indigo-600', 'shadow-sm'];
+        const inactiveClass = ['text-slate-500', 'hover:text-slate-700'];
+
+        if (mode === 'keyword') {
+            // Show Keyword
+            keywordForm.classList.remove('hidden');
+            fileForm.classList.add('hidden');
+
+            // Update Tab Styles
+            keywordTab.classList.add(...activeClass);
+            keywordTab.classList.remove(...inactiveClass, 'bg-transparent');
+            
+            fileTab.classList.remove(...activeClass);
+            fileTab.classList.add(...inactiveClass);
+        } else {
+            // Show File
+            fileForm.classList.remove('hidden');
+            keywordForm.classList.add('hidden');
+
+            // Update Tab Styles
+            fileTab.classList.add(...activeClass);
+            fileTab.classList.remove(...inactiveClass);
+
+            keywordTab.classList.remove(...activeClass);
+            keywordTab.classList.add(...inactiveClass);
+        }
+    }
+</script>
+{% endblock %}

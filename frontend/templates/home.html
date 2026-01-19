@@ -2,275 +2,433 @@
 {% load static %}
 
 {% block content %}
-<section class="relative pt-6 pb-20 lg:pt-14 lg:pb-32 overflow-hidden">
-    <div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
-    <div class="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+{# --- LOGIC SPLIT: DASHBOARD vs LANDING PAGE --- #}
+{% if is_dashboard %}
+
+    {# ================================================================= #}
+    {# CASE 1: AGENCY CEO DASHBOARD (HR / ADMIN ONLY)                    #}
+    {# ================================================================= #}
     
-    <div class="max-w-7xl mx-auto px-4 md:px-10 relative z-10">
-        <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <div class="flex flex-col gap-6 text-center lg:text-left">
-                <h1 class="text-4xl md:text-5xl lg:text-5xl font-extrabold tracking-tight leading-[1.1]">
-                    Hire <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Smarter</span>,<br/>
-                    Not Harder.
-                </h1>
-                <p class="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-lg mx-auto lg:mx-0 leading-relaxed">
-                    Automate CV parsing and find the perfect candidate in seconds using our advanced, bias-free AI algorithms.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                    {% if request.user.is_authenticated %}
-                        <a href="{% url 'web_test:job_list' %}" class="h-14 px-8 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 group">
-                            Go to Dashboard
-                            <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                        </a>
-                    {% else %}
-                        {# UPDATED: Replaced "Start Free Trial" with "Get Started" #}
-                        <a href="{% url 'web_test:register' %}" class="h-14 px-8 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 group">
-                            Get Started
-                            <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                        </a>
-
-                        {# UPDATED: Replaced "Watch Demo" with "Log in" #}
-                        <a href="{% url 'web_test:login' %}" class="h-14 px-8 rounded-xl bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white font-bold text-lg hover:bg-gray-50 dark:hover:bg-white/20 transition-all flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-primary text-[24px]">login</span>
-                            Log in
-                        </a>
-                    {% endif %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Agency Overview</h1>
+                <p class="text-slate-500">Welcome back, {{ request.user.full_name }}</p>
+            </div>
+            <div class="text-sm text-slate-500 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
+                <i class="bi bi-calendar-event mr-2"></i> Today: {% now "F j, Y" %}
+            </div>
+        </div>
+    
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-2xl z-10">
+                    <i class="bi bi-currency-dollar"></i>
                 </div>
-                <div class="pt-6 flex items-center gap-4 justify-center lg:justify-start text-sm text-gray-500 dark:text-gray-400">
-                    <div class="flex -space-x-2">
-                        <div class="size-8 rounded-full border-2 border-white dark:border-background-dark bg-gray-200 bg-cover" data-alt="User avatar 1" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAt6wPqcPanmAxnOXf4H_TgJ_wVTCCYBBamdZRqyQhCzlGdVLrjFiWyVIe8DA0LKnzYRjXD180mKiGxYGiQwadJ940vuEWY2MdIg-Cyxxugs1faZW-9FRcAxeZ6HctE6LYGRrX88c9ORwSnHVNRJptZR1AEihhE4n14mhUAOLrfpwY6icibu0qXI4OO7PM5izL_xacsjCMq2QvVhYg4_hnQwdVTHVXT8oLvCS0a8kYEir3YFXZeHKU58b4vx6qqsQGT11MHnbCIAGk')"></div>
-                        <div class="size-8 rounded-full border-2 border-white dark:border-background-dark bg-gray-300 bg-cover" data-alt="User avatar 2" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCePEtgpRiRTGJifVGQ5A9o26dGZoNqrzrdxQHFgqGvo6qePYFktgevrW613SzCmJZUuKAy1clfppPnUqz4xKuCvkbYW40AKrLzcODpXxH4jrxxBricxrJ26kSJb4oVwsojfRT8Mbs2jxRDtSn8_6Zdx9nKWuPSDi6EZ7cSr8KiJvw2N2W6RnaRqQvHBKw1gOQB7oK4TJr8MPbGGWxRfa9aXHkJZt7NUCFZE_8K6OBqj9qX9z_Fp8kpPulNGaiXcwMmIlZhNFuhFnM')"></div>
-                        <div class="size-8 rounded-full border-2 border-white dark:border-background-dark bg-gray-400 bg-cover" data-alt="User avatar 3" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB2DHvTkH4OObe3hlg7WeI-Nzx9oFd8P7qu5cNqH_cRmf-HsH1XGQEEpwHfMfBoBVHWzeUl9DnBXCejTY4vB6UX6F2q2tPLCJajV-04uWcAS8VQTJMvLXwP5_ECCn34Rza97t4BmVUPUJ_7D-X5fmLSOZ_SJ8XUFjL4VTt5IP1oWHi5DjnfbucLMJEu1aCP9ldOSx1vbpCqb3NZDCDBcH2nVIQ0x9kb5FKlpeD7qVEDOuaMTzHOePAg5MoJ6TGGiU6ZKygxf0MmK00')"></div>
-                    </div>
-                    <p>Trusted by 2,000+ HR teams</p>
+                <div class="z-10">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Projected Revenue</p>
+                    <h3 class="text-3xl font-bold text-slate-900">${{ projected_revenue }}</h3>
+                    <p class="text-xs text-emerald-600 font-semibold mt-1">
+                        <i class="bi bi-arrow-up-short"></i> Based on Offer/Hired
+                    </p>
                 </div>
             </div>
+    
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl z-10">
+                    <i class="bi bi-briefcase-fill"></i>
+                </div>
+                <div class="z-10">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Active Jobs</p>
+                    <h3 class="text-3xl font-bold text-slate-900">{{ active_jobs_count }}</h3>
+                    <p class="text-xs text-blue-600 font-semibold mt-1">Open positions</p>
+                </div>
+            </div>
+    
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden group">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl z-10">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="z-10">
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-wide">Total Candidates</p>
+                    <h3 class="text-3xl font-bold text-slate-900">{{ total_candidates }}</h3>
+                    <p class="text-xs text-indigo-600 font-semibold mt-1">In pipeline</p>
+                </div>
+            </div>
+        </div>
+    
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <div class="relative group perspective-1000">
-                <div class="absolute -inset-4 bg-gradient-to-r from-primary to-secondary rounded-2xl blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-                <div class="relative w-full aspect-[4/3] bg-gradient-to-br from-white to-purple-50 dark:from-card-dark dark:to-background-dark rounded-2xl border border-white/20 shadow-2xl overflow-hidden flex items-center justify-center">
-                    <div class="w-full h-full bg-cover bg-center" data-alt="3D abstract illustration of a robot arm sorting colorful digital resumes" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBqKbIe1cQJGPAqVyH4V37Wte2uspzyxVTLUs85u8JNhYp3PcuWMYr__Rr_P7NahSMk6tmOuY-GFuXdfaKxZmDDIUAsgBwOVGfFMlTIIjE91xLaoxfhuvwvBqb18AlEfo7p_phYiLW_cbfGTY3k3hO5-uNSFosfPZfzECZfXzlS-BQgwBvchcEhh7tLgYtwg_VFAGHFixEKMK2nUPs00vtsk9lqwXrCOQlWc-90RJzE2smQUvgQqlovvcWw-yZWEa_m5MSsZUK6MgM');"></div>
-                    <div class="absolute top-10 -left-4 bg-white dark:bg-[#2d243a] p-4 rounded-xl shadow-lg border border-gray-100 dark:border-white/10 animate-bounce" style="animation-duration: 3s;">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-green-100 text-green-600 p-2 rounded-lg">
-                                <span class="material-symbols-outlined">check_circle</span>
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="font-bold text-lg text-slate-800 mb-6">Pipeline Funnel</h3>
+                <div class="h-64">
+                    <canvas id="pipelineChart"></canvas>
+                </div>
+            </div>
+    
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                <h3 class="font-bold text-lg text-slate-800 mb-4">Recent Successes (Hired)</h3>
+                
+                {% if recent_hires %}
+                <div class="space-y-4 overflow-y-auto max-h-64 pr-2 custom-scrollbar">
+                    {% for app in recent_hires %}
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-emerald-50/50 transition-colors border border-transparent hover:border-emerald-100">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                            {{ app.candidate.full_name|first }}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-900 text-sm">{{ app.candidate.full_name }}</h4>
+                            <p class="text-xs text-slate-500">{{ app.job.title }}</p>
+                        </div>
+                        <span class="px-2 py-1 bg-white text-emerald-600 text-xs font-bold rounded border border-emerald-100 shadow-sm">
+                            HIRED
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="flex-1 flex flex-col items-center justify-center text-center text-slate-400 py-8">
+                    <i class="bi bi-trophy text-4xl mb-2 opacity-50"></i>
+                    <p class="text-sm">No hires yet. Keep pushing!</p>
+                </div>
+                {% endif %}
+    
+                <div class="mt-auto pt-4 border-t border-slate-100">
+                    <a href="{% url 'web_test:kanban_board' %}" class="block w-full text-center py-2 rounded-lg bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-colors">
+                        Go to Kanban Board
+                    </a>
+                </div>
+            </div>
+        </div>
+    
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('pipelineChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {{ chart_labels|safe }},
+                    datasets: [{
+                        label: '# of Candidates',
+                        data: {{ chart_values|safe }},
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.2)', // Blue
+                            'rgba(168, 85, 247, 0.2)', // Purple
+                            'rgba(245, 158, 11, 0.2)', // Amber
+                            'rgba(99, 102, 241, 0.2)', // Indigo
+                            'rgba(16, 185, 129, 0.2)', // Emerald
+                            'rgba(239, 68, 68, 0.2)'   // Red
+                        ],
+                        borderColor: [
+                            'rgb(59, 130, 246)',
+                            'rgb(168, 85, 247)',
+                            'rgb(245, 158, 11)',
+                            'rgb(99, 102, 241)',
+                            'rgb(16, 185, 129)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    </script>
+
+{% else %}
+
+    {# ================================================================= #}
+    {# CASE 2: STANDARD LANDING PAGE (CANDIDATES / GUESTS)               #}
+    {# ================================================================= #}
+    
+    <section class="relative pt-6 pb-20 lg:pt-14 lg:pb-32 overflow-hidden">
+        <div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[100px] pointer-events-none"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 md:px-10 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                <div class="flex flex-col gap-6 text-center lg:text-left">
+                    <h1 class="text-4xl md:text-5xl lg:text-5xl font-extrabold tracking-tight leading-[1.1]">
+                        Hire <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Smarter</span>,<br/>
+                        Not Harder.
+                    </h1>
+                    <p class="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                        Automate CV parsing and find the perfect candidate in seconds using our advanced, bias-free AI algorithms.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                        {% if request.user.is_authenticated %}
+                            <a href="{% url 'web_test:job_list' %}" class="h-14 px-8 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 group">
+                                Go to Jobs
+                                <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'web_test:register' %}" class="h-14 px-8 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold text-lg shadow-xl shadow-primary/25 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 group">
+                                Get Started
+                                <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                            </a>
+    
+                            <a href="{% url 'web_test:login' %}" class="h-14 px-8 rounded-xl bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white font-bold text-lg hover:bg-gray-50 dark:hover:bg-white/20 transition-all flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-primary text-[24px]">login</span>
+                                Log in
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="pt-6 flex items-center gap-4 justify-center lg:justify-start text-sm text-gray-500 dark:text-gray-400">
+                        <div class="flex -space-x-2">
+                            <div class="size-8 rounded-full border-2 border-white dark:border-background-dark bg-gray-200 bg-cover" data-alt="User avatar 1" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAt6wPqcPanmAxnOXf4H_TgJ_wVTCCYBBamdZRqyQhCzlGdVLrjFiWyVIe8DA0LKnzYRjXD180mKiGxYGiQwadJ940vuEWY2MdIg-Cyxxugs1faZW-9FRcAxeZ6HctE6LYGRrX88c9ORwSnHVNRJptZR1AEihhE4n14mhUAOLrfpwY6icibu0qXI4OO7PM5izL_xacsjCMq2QvVhYg4_hnQwdVTHVXT8oLvCS0a8kYEir3YFXZeHKU58b4vx6qqsQGT11MHnbCIAGk')"></div>
+                            <div class="size-8 rounded-full border-2 border-white dark:border-background-dark bg-gray-300 bg-cover" data-alt="User avatar 2" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCePEtgpRiRTGJifVGQ5A9o26dGZoNqrzrdxQHFgqGvo6qePYFktgevrW613SzCmJZUuKAy1clfppPnUqz4xKuCvkbYW40AKrLzcODpXxH4jrxxBricxrJ26kSJb4oVwsojfRT8Mbs2jxRDtSn8_6Zdx9nKWuPSDi6EZ7cSr8KiJvw2N2W6RnaRqQvHBKw1gOQB7oK4TJr8MPbGGWxRfa9aXHkJZt7NUCFZE_8K6OBqj9qX9z_Fp8kpPulNGaiXcwMmIlZhNFuhFnM')"></div>
+                            <div class="size-8 rounded-full border-2 border-white dark:border-background-dark bg-gray-400 bg-cover" data-alt="User avatar 3" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB2DHvTkH4OObe3hlg7WeI-Nzx9oFd8P7qu5cNqH_cRmf-HsH1XGQEEpwHfMfBoBVHWzeUl9DnBXCejTY4vB6UX6F2q2tPLCJajV-04uWcAS8VQTJMvLXwP5_ECCn34Rza97t4BmVUPUJ_7D-X5fmLSOZ_SJ8XUFjL4VTt5IP1oWHi5DjnfbucLMJEu1aCP9ldOSx1vbpCqb3NZDCDBcH2nVIQ0x9kb5FKlpeD7qVEDOuaMTzHOePAg5MoJ6TGGiU6ZKygxf0MmK00')"></div>
+                        </div>
+                        <p>Trusted by 2,000+ HR teams</p>
+                    </div>
+                </div>
+                
+                <div class="relative group perspective-1000">
+                    <div class="absolute -inset-4 bg-gradient-to-r from-primary to-secondary rounded-2xl blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
+                    <div class="relative w-full aspect-[4/3] bg-gradient-to-br from-white to-purple-50 dark:from-card-dark dark:to-background-dark rounded-2xl border border-white/20 shadow-2xl overflow-hidden flex items-center justify-center">
+                        <div class="w-full h-full bg-cover bg-center" data-alt="3D abstract illustration of a robot arm sorting colorful digital resumes" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBqKbIe1cQJGPAqVyH4V37Wte2uspzyxVTLUs85u8JNhYp3PcuWMYr__Rr_P7NahSMk6tmOuY-GFuXdfaKxZmDDIUAsgBwOVGfFMlTIIjE91xLaoxfhuvwvBqb18AlEfo7p_phYiLW_cbfGTY3k3hO5-uNSFosfPZfzECZfXzlS-BQgwBvchcEhh7tLgYtwg_VFAGHFixEKMK2nUPs00vtsk9lqwXrCOQlWc-90RJzE2smQUvgQqlovvcWw-yZWEa_m5MSsZUK6MgM');"></div>
+                        <div class="absolute top-10 -left-4 bg-white dark:bg-[#2d243a] p-4 rounded-xl shadow-lg border border-gray-100 dark:border-white/10 animate-bounce" style="animation-duration: 3s;">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-green-100 text-green-600 p-2 rounded-lg">
+                                    <span class="material-symbols-outlined">check_circle</span>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">Status</div>
+                                    <div class="text-sm font-bold dark:text-white">Match Found!</div>
+                                </div>
                             </div>
-                            <div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">Status</div>
-                                <div class="text-sm font-bold dark:text-white">Match Found!</div>
+                        </div>
+                        <div class="absolute bottom-12 -right-4 bg-white dark:bg-[#2d243a] p-4 rounded-xl shadow-lg border border-gray-100 dark:border-white/10 animate-bounce" style="animation-duration: 4s;">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                                    <span class="material-symbols-outlined">analytics</span>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">Resume Score</div>
+                                    <div class="text-sm font-bold dark:text-white">98% Fit</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="absolute bottom-12 -right-4 bg-white dark:bg-[#2d243a] p-4 rounded-xl shadow-lg border border-gray-100 dark:border-white/10 animate-bounce" style="animation-duration: 4s;">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
-                                <span class="material-symbols-outlined">analytics</span>
-                            </div>
-                            <div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">Resume Score</div>
-                                <div class="text-sm font-bold dark:text-white">98% Fit</div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
-
-<section class="py-10 border-y border-[#ece7f3] dark:border-white/5 bg-white/50 dark:bg-white/5">
-    <div class="max-w-7xl mx-auto px-4 md:px-10">
-        <p class="text-center text-sm font-semibold text-gray-500 mb-6 uppercase tracking-wider">Trusted by modern teams at</p>
-        <div class="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">pentagon</span> Acme Corp</h3>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">hexagon</span> GlobalTech</h3>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">change_history</span> Pyramid</h3>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">circle</span> Orbit</h3>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">square</span> BlockSystems</h3>
-        </div>
-    </div>
-</section>
-
-<section class="py-20 lg:py-32 relative">
-    <div class="max-w-7xl mx-auto px-4 md:px-10">
-        <div class="text-center max-w-3xl mx-auto mb-16">
-            <h2 class="text-3xl md:text-4xl lg:text-4xl font-extrabold mb-6 text-gray-900 dark:text-white">
-                How AI Hiring Works
-            </h2>
-            <p class="text-lg text-gray-600 dark:text-gray-300">
-                Streamline your recruitment process in three simple, automated steps. Focus on people, let AI handle the data.
-            </p>
-        </div>
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="group relative bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card border border-transparent hover:border-primary/20 hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
-                <div class="absolute -top-6 left-8 bg-gradient-to-br from-primary to-purple-600 text-white w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg">1</div>
-                <div class="mt-8 mb-6 bg-purple-50 dark:bg-white/5 w-16 h-16 rounded-full flex items-center justify-center text-primary dark:text-purple-300 group-hover:scale-110 transition-transform duration-300">
-                    <span class="material-symbols-outlined text-[32px]">cloud_upload</span>
-                </div>
-                <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Upload Resumes</h3>
-                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Drag and drop bulk CVs instantly. We support PDF, DOCX, and more formats securely.
-                </p>
-            </div>
-            <div class="group relative bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card border border-transparent hover:border-primary/20 hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
-                <div class="absolute -top-6 left-8 bg-gradient-to-br from-primary to-purple-600 text-white w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg">2</div>
-                <div class="mt-8 mb-6 bg-purple-50 dark:bg-white/5 w-16 h-16 rounded-full flex items-center justify-center text-primary dark:text-purple-300 group-hover:scale-110 transition-transform duration-300">
-                    <span class="material-symbols-outlined text-[32px]">neurology</span>
-                </div>
-                <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">AI Analysis</h3>
-                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Our AI engine parses context, matches skills, and identifies potential red flags automatically.
-                </p>
-            </div>
-            <div class="group relative bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card border border-transparent hover:border-primary/20 hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
-                <div class="absolute -top-6 left-8 bg-gradient-to-br from-primary to-purple-600 text-white w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg">3</div>
-                <div class="mt-8 mb-6 bg-purple-50 dark:bg-white/5 w-16 h-16 rounded-full flex items-center justify-center text-primary dark:text-purple-300 group-hover:scale-110 transition-transform duration-300">
-                    <span class="material-symbols-outlined text-[32px]">trophy</span>
-                </div>
-                <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Ranked Candidates</h3>
-                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
-                    Get a prioritized list of top talent ranked by fit score. Hire the best, faster.
-                </p>
+    </section>
+    
+    <section class="py-10 border-y border-[#ece7f3] dark:border-white/5 bg-white/50 dark:bg-white/5">
+        <div class="max-w-7xl mx-auto px-4 md:px-10">
+            <p class="text-center text-sm font-semibold text-gray-500 mb-6 uppercase tracking-wider">Trusted by modern teams at</p>
+            <div class="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">pentagon</span> Acme Corp</h3>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">hexagon</span> GlobalTech</h3>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">change_history</span> Pyramid</h3>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">circle</span> Orbit</h3>
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined">square</span> BlockSystems</h3>
             </div>
         </div>
-    </div>
-</section>
-
-<section id="benefits" class="py-20 lg:py-32 bg-white dark:bg-card-dark relative overflow-hidden">
-    <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
-    <div class="absolute -right-40 top-40 w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
-
-    <div class="max-w-7xl mx-auto px-4 md:px-10 relative z-10">
-        <div class="flex flex-col lg:flex-row gap-16 items-start">
-            <div class="lg:w-1/3 sticky top-32">
-                <h2 class="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6 text-gray-900 dark:text-white">
-                    Key Benefits
+    </section>
+    
+    <section class="py-20 lg:py-32 relative">
+        <div class="max-w-7xl mx-auto px-4 md:px-10">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-3xl md:text-4xl lg:text-4xl font-extrabold mb-6 text-gray-900 dark:text-white">
+                    How AI Hiring Works
                 </h2>
-                <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
-                    Why forward-thinking HR teams and startups are switching to SmartHire AI.
+                <p class="text-lg text-gray-600 dark:text-gray-300">
+                    Streamline your recruitment process in three simple, automated steps. Focus on people, let AI handle the data.
                 </p>
-                <button class="bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white font-bold h-12 px-6 rounded-xl transition-all flex items-center gap-2">
-                    Learn More
-                    <span class="material-symbols-outlined">arrow_right_alt</span>
-                </button>
             </div>
-            <div class="lg:w-2/3 grid sm:grid-cols-2 gap-6">
-                <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
-                    <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
-                        <span class="material-symbols-outlined">timer</span>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="group relative bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card border border-transparent hover:border-primary/20 hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
+                    <div class="absolute -top-6 left-8 bg-gradient-to-br from-primary to-purple-600 text-white w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg">1</div>
+                    <div class="mt-8 mb-6 bg-purple-50 dark:bg-white/5 w-16 h-16 rounded-full flex items-center justify-center text-primary dark:text-purple-300 group-hover:scale-110 transition-transform duration-300">
+                        <span class="material-symbols-outlined text-[32px]">cloud_upload</span>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Save 80% Time</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Reduce screening time drastically. Let the AI handle the initial sift while you focus on interviews.</p>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Upload Resumes</h3>
+                    <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Drag and drop bulk CVs instantly. We support PDF, DOCX, and more formats securely.
+                    </p>
                 </div>
-                <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
-                    <div class="w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 flex items-center justify-center mb-4">
-                        <span class="material-symbols-outlined">balance</span>
+                <div class="group relative bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card border border-transparent hover:border-primary/20 hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
+                    <div class="absolute -top-6 left-8 bg-gradient-to-br from-primary to-purple-600 text-white w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg">2</div>
+                    <div class="mt-8 mb-6 bg-purple-50 dark:bg-white/5 w-16 h-16 rounded-full flex items-center justify-center text-primary dark:text-purple-300 group-hover:scale-110 transition-transform duration-300">
+                        <span class="material-symbols-outlined text-[32px]">neurology</span>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Bias Reduction</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Our algorithms focus purely on skills and experience, ignoring demographic data to ensure fair hiring.</p>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">AI Analysis</h3>
+                    <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Our AI engine parses context, matches skills, and identifies potential red flags automatically.
+                    </p>
                 </div>
-                <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
-                    <div class="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center mb-4">
-                        <span class="material-symbols-outlined">extension</span>
+                <div class="group relative bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card border border-transparent hover:border-primary/20 hover:shadow-glow transition-all duration-300 hover:-translate-y-2">
+                    <div class="absolute -top-6 left-8 bg-gradient-to-br from-primary to-purple-600 text-white w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shadow-lg">3</div>
+                    <div class="mt-8 mb-6 bg-purple-50 dark:bg-white/5 w-16 h-16 rounded-full flex items-center justify-center text-primary dark:text-purple-300 group-hover:scale-110 transition-transform duration-300">
+                        <span class="material-symbols-outlined text-[32px]">trophy</span>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Skill Matching</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Precise matching algorithms that understand nuances in job descriptions and resume formatting.</p>
-                </div>
-                <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
-                    <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center mb-4">
-                        <span class="material-symbols-outlined">hub</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">ATS Integration</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Seamlessly integrates with your existing Applicant Tracking Systems like Greenhouse and Lever.</p>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Ranked Candidates</h3>
+                    <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                        Get a prioritized list of top talent ranked by fit score. Hire the best, faster.
+                    </p>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
+    
+    <section id="benefits" class="py-20 lg:py-32 bg-white dark:bg-card-dark relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+        <div class="absolute -right-40 top-40 w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
+    
+        <div class="max-w-7xl mx-auto px-4 md:px-10 relative z-10">
+            <div class="flex flex-col lg:flex-row gap-16 items-start">
+                <div class="lg:w-1/3 sticky top-32">
+                    <h2 class="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-6 text-gray-900 dark:text-white">
+                        Key Benefits
+                    </h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                        Why forward-thinking HR teams and startups are switching to SmartHire AI.
+                    </p>
+                    <button class="bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-900 dark:text-white font-bold h-12 px-6 rounded-xl transition-all flex items-center gap-2">
+                        Learn More
+                        <span class="material-symbols-outlined">arrow_right_alt</span>
+                    </button>
+                </div>
+                <div class="lg:w-2/3 grid sm:grid-cols-2 gap-6">
+                    <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
+                        <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined">timer</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Save 80% Time</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Reduce screening time drastically. Let the AI handle the initial sift while you focus on interviews.</p>
+                    </div>
+                    <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
+                        <div class="w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined">balance</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Bias Reduction</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Our algorithms focus purely on skills and experience, ignoring demographic data to ensure fair hiring.</p>
+                    </div>
+                    <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
+                        <div class="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined">extension</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Skill Matching</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Precise matching algorithms that understand nuances in job descriptions and resume formatting.</p>
+                    </div>
+                    <div class="p-6 rounded-2xl bg-background-light dark:bg-background-dark border border-gray-100 dark:border-white/5 hover:border-primary/50 transition-colors">
+                        <div class="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined">hub</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">ATS Integration</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Seamlessly integrates with your existing Applicant Tracking Systems like Greenhouse and Lever.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section id="reviews" class="py-20 lg:py-32 bg-background-light dark:bg-background-dark">
+        <div class="max-w-7xl mx-auto px-4 md:px-10">
+            <h2 class="text-3xl md:text-4xl font-extrabold text-center mb-16 text-gray-900 dark:text-white">What People Say</h2>
+            <div class="flex flex-col md:flex-row gap-6 overflow-x-auto pb-8 snap-x">
+                <div class="min-w-[300px] md:min-w-[400px] bg-white dark:bg-card-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between snap-center">
+                    <div>
+                        <div class="flex text-yellow-400 mb-4 text-[20px]">
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 text-lg italic mb-6">"SmartHire AI has completely transformed our hiring pipeline. We found our lead developer in 2 days instead of 2 months."</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 bg-cover" data-alt="Headshot of Sarah J" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuADyxLw0SYUn-ct8ZxUniqBQLM1jKNxoKT5AKMwi4xQCQ5ZNUGUYKA0XzDMS58Y6jkWlrcjqEEcMUyo_2Dl7b65rCYNreXFKytnPt1En2PMzK0ogECp2Avwfmp69q3aiRCj4fiBnpdS9sOl4rk8LXBLZ0wnUvo-aREQ8Q9OvmtLquI4tJFd1KfRIH3fwLejDBoXKPnUAwe_D5-TKWj2nrJxDe2ul3q1eAhQOKbKz1WAUwh-rdctsQfGgbZ923bIVMNXYkc42lq73rU')"></div>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white">Sarah Jenkins</div>
+                            <div class="text-xs text-gray-500">VP of HR, TechFlow</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="min-w-[300px] md:min-w-[400px] bg-white dark:bg-card-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between snap-center">
+                    <div>
+                        <div class="flex text-yellow-400 mb-4 text-[20px]">
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star_half</span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 text-lg italic mb-6">"The bias reduction features are a game changer for our diversity goals. Highly recommended for modern teams."</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 bg-cover" data-alt="Headshot of Mark D" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDCwZLJ7oge6U-3mcCqTU0VEcmlhkin-raZKxd-kQ-D6p8T6r8dZIIwwpcFcvJxUCVqSDR7l252Cbt3cudLpkpt0BbNVk9WYqFrIKGvuG2qb63muxRtEGc5H0jCJKPX2B9NojouzzR3wC1_CPwu6471Pc-ZBW8q1ccjd8Qv7-GfMrKXKaZnW3sN9Tr53aTK4KX4594ATghmn89r5O-CYYnOkpqbz1zg25jJJm2VBLBtQp9vWyMdmdd5i-BQHen98n290qgQuHtvCEU')"></div>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white">Mark Davis</div>
+                            <div class="text-xs text-gray-500">Recruiting Manager, InnoSoft</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="min-w-[300px] md:min-w-[400px] bg-white dark:bg-card-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between snap-center">
+                    <div>
+                        <div class="flex text-yellow-400 mb-4 text-[20px]">
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                            <span class="material-symbols-outlined fill-current">star</span>
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 text-lg italic mb-6">"Simple interface, powerful backend. It just works. The ranking system is surprisingly accurate."</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 bg-cover" data-alt="Headshot of Elena R" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB8qrkbrFNAVkP8qOjN9G1nC-UopiwuXh_s-9FhFWmnP_ABTRf2ifGZGuNFFzuh01He1NVaMiULzBe97GKsFB8F0_TmUV6xDf_MGEW2CXosMF3Blh1se4HOgj8Taxuk0iZD9WH488G1bY0PEIadYOBaV5sluIpgxRk20jrS8GZeySm2qIVNoC-k8Ou4EkyF8zugNrUOOXen1EHKiHw72S3M65nFZ90kvNb7iUkQhMfXx4Li-fgz45NeH8usDoF3jZ1v_iRF_VHlnA0')"></div>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white">Elena Rodriguez</div>
+                            <div class="text-xs text-gray-500">Founder, StartUp Inc</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="py-20 relative overflow-hidden">
+        <div class="absolute inset-0 bg-primary dark:bg-primary-dark opacity-90"></div>
+        <div class="absolute inset-0 bg-[url('https://placeholder.pics/svg/100')] opacity-10 mix-blend-overlay" data-alt="Pattern texture background"></div>
+        <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
+            <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-6">Ready to hire your dream team?</h2>
+            <p class="text-xl text-purple-100 mb-10">Join 2,000+ companies using SmartHire AI to streamline their recruitment.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                {% if request.user.is_authenticated %}
+                    <a href="{% url 'web_test:job_list' %}" class="bg-white text-primary hover:bg-gray-100 font-bold text-lg h-14 px-10 rounded-xl transition-all shadow-xl flex items-center justify-center">
+                        Go to Dashboard
+                    </a>
+                {% else %}
+                    <a href="{% url 'web_test:register' %}" class="bg-white text-primary hover:bg-gray-100 font-bold text-lg h-14 px-10 rounded-xl transition-all shadow-xl flex items-center justify-center">
+                        Get Started
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
 
-<section id="reviews" class="py-20 lg:py-32 bg-background-light dark:bg-background-dark">
-    <div class="max-w-7xl mx-auto px-4 md:px-10">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-center mb-16 text-gray-900 dark:text-white">What People Say</h2>
-        <div class="flex flex-col md:flex-row gap-6 overflow-x-auto pb-8 snap-x">
-            <div class="min-w-[300px] md:min-w-[400px] bg-white dark:bg-card-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between snap-center">
-                <div>
-                    <div class="flex text-yellow-400 mb-4 text-[20px]">
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                    </div>
-                    <p class="text-gray-700 dark:text-gray-300 text-lg italic mb-6">"SmartHire AI has completely transformed our hiring pipeline. We found our lead developer in 2 days instead of 2 months."</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gray-200 bg-cover" data-alt="Headshot of Sarah J" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuADyxLw0SYUn-ct8ZxUniqBQLM1jKNxoKT5AKMwi4xQCQ5ZNUGUYKA0XzDMS58Y6jkWlrcjqEEcMUyo_2Dl7b65rCYNreXFKytnPt1En2PMzK0ogECp2Avwfmp69q3aiRCj4fiBnpdS9sOl4rk8LXBLZ0wnUvo-aREQ8Q9OvmtLquI4tJFd1KfRIH3fwLejDBoXKPnUAwe_D5-TKWj2nrJxDe2ul3q1eAhQOKbKz1WAUwh-rdctsQfGgbZ923bIVMNXYkc42lq73rU')"></div>
-                    <div>
-                        <div class="font-bold text-gray-900 dark:text-white">Sarah Jenkins</div>
-                        <div class="text-xs text-gray-500">VP of HR, TechFlow</div>
-                    </div>
-                </div>
-            </div>
-            <div class="min-w-[300px] md:min-w-[400px] bg-white dark:bg-card-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between snap-center">
-                <div>
-                    <div class="flex text-yellow-400 mb-4 text-[20px]">
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star_half</span>
-                    </div>
-                    <p class="text-gray-700 dark:text-gray-300 text-lg italic mb-6">"The bias reduction features are a game changer for our diversity goals. Highly recommended for modern teams."</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gray-200 bg-cover" data-alt="Headshot of Mark D" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDCwZLJ7oge6U-3mcCqTU0VEcmlhkin-raZKxd-kQ-D6p8T6r8dZIIwwpcFcvJxUCVqSDR7l252Cbt3cudLpkpt0BbNVk9WYqFrIKGvuG2qb63muxRtEGc5H0jCJKPX2B9NojouzzR3wC1_CPwu6471Pc-ZBW8q1ccjd8Qv7-GfMrKXKaZnW3sN9Tr53aTK4KX4594ATghmn89r5O-CYYnOkpqbz1zg25jJJm2VBLBtQp9vWyMdmdd5i-BQHen98n290qgQuHtvCEU')"></div>
-                    <div>
-                        <div class="font-bold text-gray-900 dark:text-white">Mark Davis</div>
-                        <div class="text-xs text-gray-500">Recruiting Manager, InnoSoft</div>
-                    </div>
-                </div>
-            </div>
-            <div class="min-w-[300px] md:min-w-[400px] bg-white dark:bg-card-dark p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col justify-between snap-center">
-                <div>
-                    <div class="flex text-yellow-400 mb-4 text-[20px]">
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                        <span class="material-symbols-outlined fill-current">star</span>
-                    </div>
-                    <p class="text-gray-700 dark:text-gray-300 text-lg italic mb-6">"Simple interface, powerful backend. It just works. The ranking system is surprisingly accurate."</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gray-200 bg-cover" data-alt="Headshot of Elena R" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB8qrkbrFNAVkP8qOjN9G1nC-UopiwuXh_s-9FhFWmnP_ABTRf2ifGZGuNFFzuh01He1NVaMiULzBe97GKsFB8F0_TmUV6xDf_MGEW2CXosMF3Blh1se4HOgj8Taxuk0iZD9WH488G1bY0PEIadYOBaV5sluIpgxRk20jrS8GZeySm2qIVNoC-k8Ou4EkyF8zugNrUOOXen1EHKiHw72S3M65nFZ90kvNb7iUkQhMfXx4Li-fgz45NeH8usDoF3jZ1v_iRF_VHlnA0')"></div>
-                    <div>
-                        <div class="font-bold text-gray-900 dark:text-white">Elena Rodriguez</div>
-                        <div class="text-xs text-gray-500">Founder, StartUp Inc</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="py-20 relative overflow-hidden">
-    <div class="absolute inset-0 bg-primary dark:bg-primary-dark opacity-90"></div>
-    <div class="absolute inset-0 bg-[url('https://placeholder.pics/svg/100')] opacity-10 mix-blend-overlay" data-alt="Pattern texture background"></div>
-    <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
-        <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-6">Ready to hire your dream team?</h2>
-        <p class="text-xl text-purple-100 mb-10">Join 2,000+ companies using SmartHire AI to streamline their recruitment.</p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            {% if request.user.is_authenticated %}
-                <a href="{% url 'web_test:job_list' %}" class="bg-white text-primary hover:bg-gray-100 font-bold text-lg h-14 px-10 rounded-xl transition-all shadow-xl flex items-center justify-center">
-                    Go to Dashboard
-                </a>
-            {% else %}
-                <a href="{% url 'web_test:register' %}" class="bg-white text-primary hover:bg-gray-100 font-bold text-lg h-14 px-10 rounded-xl transition-all shadow-xl flex items-center justify-center">
-                    Get Started
-                </a>
-            {% endif %}
-            {# REMOVED: View Pricing button was here #}
-        </div>
-    </div>
-</section>
+{% endif %}
 {% endblock %}

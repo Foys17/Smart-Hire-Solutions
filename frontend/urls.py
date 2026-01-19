@@ -33,5 +33,8 @@ urlpatterns = [
     path('application/<int:application_id>/withdraw/', views.withdraw_application, name='withdraw_application'),
     path('tools/cv-builder/', views.cv_builder, name='cv_builder'),
     path('application/<int:pk>/reject/', views.reject_application, name='reject_application'),
-    
+    path('talent-pool/', views.talent_pool, name='talent_pool'),
+    path('talent-pool/invite/<int:application_id>/', views.invite_candidate, name='invite_candidate'),
+    path('kanban/', views.kanban_board, name='kanban_board'),
+    path('api/update-status/', views.update_application_status, name='update_status_api'),
 ]

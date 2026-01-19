@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="h-[calc(100vh-64px)] flex flex-col bg-slate-50 overflow-hidden">
+    
+    <div class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shrink-0 z-10">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Recruitment Pipeline</h1>
+            <p class="text-sm text-slate-500">Drag and drop candidates to move them through stages.</p>
+        </div>
+        
+        <form method="get" class="flex items-center gap-3">
+            <label class="text-sm font-semibold text-slate-600">Filter by Job:</label>
+            <select name="job_id" onchange="this.form.submit()" 
+                class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64">
+                <option value="">All Active Jobs</option>
+                {% for job in jobs %}
+                    <option value="{{ job.id }}" {% if job.id == selected_job_id %}selected{% endif %}>
+                        {{ job.title }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div class="flex-1 overflow-x-auto overflow-y-hidden p-6">
+        <div class="flex h-full gap-6 min-w-max">
+            
+            {% for status_code, apps_list in columns.items %}
+            <div class="flex flex-col w-80 bg-slate-100/50 rounded-xl border border-slate-200/60 max-h-full">
+                
+                <div class="p-4 border-b border-slate-200/60 flex justify-between items-center bg-white/50 rounded-t-xl backdrop-blur-sm sticky top-0">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full 
+                            {% if status_code == 'APPLIED' %}bg-blue-500
+                            {% elif status_code == 'SCREENING' %}bg-purple-500
+                            {% elif status_code == 'INTERVIEW' %}bg-amber-500
+                            {% elif status_code == 'OFFER' %}bg-indigo-500
+                            {% elif status_code == 'HIRED' %}bg-emerald-500
+                            {% else %}bg-slate-400{% endif %}">
+                        </span>
+                        <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide">
+                            {{ status_code|lower|capfirst }}
+                        </h3>
+                    </div>
+                    <span class="bg-white px-2 py-0.5 rounded text-xs font-bold text-slate-400 border border-slate-100 shadow-sm">
+                        {{ apps_list|length }}
+                    </span>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"
+                     ondragover="allowDrop(event)" 
+                     ondrop="drop(event, '{{ status_code }}')">
+                    
+                    {% for app in apps_list %}
+                    <div draggable="true" ondragstart="drag(event)" 
+                         id="app-{{ app.id }}" 
+                         data-app-id="{{ app.id }}"
+                         class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 cursor-move hover:shadow-md hover:border-indigo-300 group transition-all relative">
+                        
+                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-slate-300">
+                            <i class="bi bi-grip-vertical"></i>
+                        </div>
+
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
+                                {{ app.candidate.full_name|first }}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-sm truncate w-40">{{ app.candidate.full_name }}</h4>
+                                <p class="text-xs text-slate-500 truncate w-40">{{ app.job.title }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-3 border-t border-slate-50 mt-2">
+                            <div class="text-xs font-semibold 
+                                {% if app.match_score >= 80 %}text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded
+                                {% elif app.match_score >= 50 %}text-amber-600 bg-amber-50 px-2 py-0.5 rounded
+                                {% else %}text-slate-500{% endif %}">
+                                {{ app.match_score|default:"0" }}% Match
+                            </div>
+                            
+                            <a href="{% url 'web_test:application_detail' app.id %}" class="text-slate-400 hover:text-indigo-600 text-xs font-medium">
+                                View <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if not apps_list %}
+                    <div class="h-20 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 text-xs italic pointer-events-none">
+                        Drop items here
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function drag(ev) {
+        ev.dataTransfer.setData("text", ev.target.id);
+        ev.target.classList.add('opacity-50'); // Visual feedback
+    }
+
+    function allowDrop(ev) {
+        ev.preventDefault(); // Default is to not allow drop
+    }
+
+    function drop(ev, newStatus) {
+        ev.preventDefault();
+        var data = ev.dataTransfer.getData("text");
+        var draggedElement = document.getElementById(data);
+        var dropZone = ev.currentTarget;
+        
+        draggedElement.classList.remove('opacity-50');
+
+        // Append card to new column visually
+        dropZone.appendChild(draggedElement);
+        
+        // Remove empty placeholder if it exists
+        const placeholder = dropZone.querySelector('.border-dashed');
+        if(placeholder) placeholder.style.display = 'none';
+
+        // --- AJAX CALL TO UPDATE SERVER ---
+        const appId = draggedElement.getAttribute('data-app-id');
+        
+        fetch("{% url 'web_test:update_status_api' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                app_id: appId,
+                new_status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                console.log("Status updated to " + newStatus);
+                // Optional: Show a small toast notification
+            } else {
+                alert("Error updating status!");
+                // Revert move on error (reload page or move back)
+                location.reload(); 
+            }
+        });
+    }
+
+    // Restore opacity if drag ends without drop
+    document.addEventListener("dragend", function(event) {
+        event.target.classList.remove("opacity-50");
+    });
+</script>
+
+<style>
+    /* Custom Scrollbar for columns */
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+{% endblock %}

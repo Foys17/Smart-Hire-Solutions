@@ -18,6 +18,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 
+# JINA_API_KEY = os.getenv('JINA_API_KEY')
+
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = []
@@ -44,6 +46,7 @@ INSTALLED_APPS = [
     'jobs',
     'candidates',
     'frontend',
+    'clients',
     
 ]
 
@@ -212,31 +215,35 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 
 
 UNFOLD = {
-    "SITE_TITLE": "Smart Hire Admin",
+    "SITE_TITLE": "Agency Admin",
     "SITE_HEADER": "Smart Hire Solutions",
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Recruitment",
+                "title": "Agency Management",
                 "separator": True,
                 "items": [
+                    {
+                        "title": "Clients",
+                        "icon": "domain",  # Building icon for companies
+                        "link": reverse_lazy("admin:clients_clientcompany_changelist"),
+                    },
                     {
                         "title": "Jobs",
                         "icon": "work",
                         "link": reverse_lazy("admin:jobs_job_changelist"), 
                     },
                     {
-                        "title": "Applications",
+                        "title": "Placements", 
                         "icon": "assignment_ind",
                         "link": reverse_lazy("admin:candidates_application_changelist"),
                     },
                 ],
             },
-            # DELETED: The entire "Organization" section (Employees, Payroll, Leaves)
             {
-                "title": "System",
+                "title": "System & Access",
                 "separator": True,
                 "items": [
                     {

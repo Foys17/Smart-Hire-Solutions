@@ -8,19 +8,68 @@ from candidates.models import Application
 from candidates.utils import process_application
 from .forms import JobForm, ApplicationForm, UserLoginForm, UserRegistrationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm
 from .utils import generate_ats_cv
-from django.http import HttpResponseForbidden, FileResponse
+from django.http import HttpResponseForbidden, FileResponse,JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
 import uuid 
+from candidates.utils import search_global_talent, extract_text_from_pdf
+from django.urls import reverse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+import json
+from jobs.models import Job
+from django.db.models import Sum, Count, F
 
 
 
 User = get_user_model()
 
 
+# --- HOME VIEW (Dashboard & Landing Page) ---
 def home(request):
-    """Public Landing Page"""
-    return render(request, 'home.html')
+    # 1. Define who gets to see the Dashboard
+    # Users who are HR, Admin, OR Superusers (even if their role says 'Candidate')
+    is_dashboard_user = request.user.is_authenticated and (
+        request.user.role in ['HR', 'Admin'] or request.user.is_superuser
+    )
+
+    # 2. If NOT a dashboard user (Guest or Candidate), show Landing Page
+    if not is_dashboard_user:
+        return render(request, 'home.html')
+
+    # 3. If Dashboard User, Calculate Stats
+    active_jobs_count = Job.objects.filter(status='OPEN').count()
+    total_candidates = Application.objects.count()
+    
+    # Calculate Revenue
+    revenue_query = Application.objects.filter(status__in=['HIRED', 'OFFER']).aggregate(
+        total_commission=Sum(F('job__salary_budget') * F('job__commission_rate') / 100)
+    )
+    raw_revenue = revenue_query['total_commission'] or 0
+    formatted_revenue = "{:,.0f}".format(raw_revenue)
+
+    # Chart Data
+    pipeline_data = list(Application.objects.values('status').annotate(count=Count('status')))
+    chart_labels = []
+    chart_values = []
+    for item in pipeline_data:
+        chart_labels.append(item['status'].capitalize())
+        chart_values.append(item['count'])
+
+    # Recent Hires
+    recent_hires = Application.objects.filter(status='HIRED').select_related('candidate', 'job').order_by('-created_at')[:5]
+
+    context = {
+        'is_dashboard': True,
+        'active_jobs_count': active_jobs_count,
+        'total_candidates': total_candidates,
+        'projected_revenue': formatted_revenue,
+        'chart_labels': chart_labels,
+        'chart_values': chart_values,
+        'recent_hires': recent_hires
+    }
+    
+    return render(request, 'home.html', context)
 
 
 def job_list(request):
@@ -624,5 +673,163 @@ def reject_application(request, pk):
     return redirect('web_test:job_ranking', job_id=app.job.id)
 
 
+@login_required
+def talent_pool(request):
+    if request.user.role not in ['HR', 'Admin']:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+        
+    query = request.GET.get('q', '')
+    results = []
+    
+    if query:
+        try:
+            results = search_global_talent(query)
+            if not results:
+                messages.info(request, "No matching talent found.")
+        except Exception as e:
+            messages.error(request, f"Search Error: {str(e)}")
+            
+    return render(request, 'talent_pool.html', {'query': query, 'results': results})
+
+@login_required
+def talent_pool(request):
+    if request.user.role not in ['HR', 'Admin']:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+        
+    query = request.GET.get('q', '')
+    results = []
+    
+    # --- LOGIC: HANDLE FILE UPLOAD SEARCH ---
+    if request.method == 'POST' and request.FILES.get('jd_file'):
+        uploaded_file = request.FILES['jd_file']
+        
+        # Check if PDF
+        if uploaded_file.name.endswith('.pdf'):
+            try:
+                # Reuse your existing PDF extractor
+                extracted_text = extract_text_from_pdf(uploaded_file)
+                # Use the first 1000 chars as the search query
+                query = extracted_text[:1000]
+                messages.success(request, f"Searching based on uploaded file: {uploaded_file.name}")
+            except Exception as e:
+                messages.error(request, f"Error reading file: {e}")
+        else:
+            messages.error(request, "Please upload a valid PDF file.")
+
+    # --- PERFORM SEARCH ---
+    if query:
+        try:
+            # Pass the text (either from Input or PDF) to your AI
+            results = search_global_talent(query)
+            if not results:
+                messages.info(request, "No matching talent found.")
+        except Exception as e:
+            messages.error(request, f"Search Error: {str(e)}")
+            
+    return render(request, 'talent_pool.html', {'query': query, 'results': results})
+
+@login_required
+def invite_candidate(request, application_id):
+    if request.user.role not in ['HR', 'Admin']:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+
+    app = get_object_or_404(Application, id=application_id)
+    candidate_email = app.candidate.email
+    candidate_name = app.candidate.full_name
+
+    # Link to your Job Board (Change this if you have a specific job link)
+    job_board_url = request.build_absolute_uri(reverse('web_test:job_list'))
+
+    subject = f"Interview Invitation - Smart Hire Solutions"
+    message = f"""
+    Hi {candidate_name},
+
+    We found your profile in our talent pool and were impressed by your qualifications.
+    
+    A company is currently hiring for a role that fits your profile perfectly. 
+    We strongly encourage you to check out our open positions and apply!
+
+    Click here to view jobs: {job_board_url}
+
+    Best regards,
+    The Recruitment Team
+    """
+
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER,
+            [candidate_email],
+            fail_silently=False,
+        )
+        messages.success(request, f"Invitation sent to {candidate_name}!")
+    except Exception as e:
+        messages.error(request, f"Failed to send email: {e}")
+
+    # Redirect back to where they came from
+    return redirect(request.META.get('HTTP_REFERER', 'web_test:talent_pool'))
 
 
+@login_required
+def kanban_board(request):
+    if request.user.role not in ['HR', 'Admin']:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+
+    # Get selected job ID from dropdown (optional)
+    selected_job_id = request.GET.get('job_id')
+    
+    # Base query
+    applications = Application.objects.select_related('candidate', 'job').all()
+    
+    # Filter by Job if selected
+    if selected_job_id:
+        applications = applications.filter(job_id=selected_job_id)
+
+    # Organize into Columns
+    columns = {
+        'APPLIED': [],
+        'SCREENING': [],
+        'INTERVIEW': [],
+        'OFFER': [],
+        'HIRED': [],
+        'REJECTED': []
+    }
+
+    for app in applications:
+        # Safety check: if status is weird, default to APPLIED
+        if app.status in columns:
+            columns[app.status].append(app)
+        else:
+            columns['APPLIED'].append(app)
+
+    # Get active jobs for the filter dropdown
+    jobs = Job.objects.filter(status='OPEN')
+
+    context = {
+        'columns': columns,
+        'jobs': jobs,
+        'selected_job_id': int(selected_job_id) if selected_job_id else None
+    }
+    return render(request, 'kanban_board.html', context)
+
+# --- API TO UPDATE STATUS ---
+@login_required
+@require_POST
+def update_application_status(request):
+    try:
+        data = json.loads(request.body)
+        app_id = data.get('app_id')
+        new_status = data.get('new_status')
+
+        app = Application.objects.get(id=app_id)
+        app.status = new_status
+        app.save()
+
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

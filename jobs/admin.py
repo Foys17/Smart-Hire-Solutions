@@ -4,30 +4,37 @@ from .models import Job
 
 @admin.register(Job)
 class JobAdmin(ModelAdmin):
-    # Columns shown in the list view
-    list_display = ('title', 'posted_by', 'status', 'created_at', 'has_file')
+    list_display = ('title', 'get_client', 'status', 'salary_budget', 'commission_rate', 'created_at')
     
-    # Sidebar filters
-    list_filter = ('status', 'created_at', 'posted_by')
+    # Filter by Client to see "All Jobs for Google"
+    list_filter = ('client', 'status', 'created_at')
     
-    # Search box functionality
-    search_fields = ('title', 'description_text', 'posted_by__email')
-    
+    search_fields = ('title', 'client__name', 'description_text')
 
-    # Organize the detail view nicely
     fieldsets = (
-        ('Job Details', {
-            'fields': ('title', 'posted_by', 'status', 'description_text', 'description_file')
+        ('Client & Role', {
+            'fields': ('client', 'title', 'status')
         }),
-        ('AI Processing (Editable)', {
+        ('Job Description', {
+            'fields': ('description_text', 'description_file')
+        }),
+        ('Financials (Internal Only)', {
+            'classes': ('collapse',),
+            'fields': ('salary_budget', 'commission_rate')
+        }),
+        ('AI Processing', {
             'classes': ('collapse',),
             'fields': ('processed_text', 'gliner_entities', 'jina_embedding')
         }),
     )
 
+    def get_client(self, obj):
+        return obj.client.name if obj.client else "Internal"
+    get_client.short_description = 'Client Company'
+
     def has_file(self, obj):
         return bool(obj.description_file)
-    has_file.boolean = True  # Shows a nice green checkmark icon
+    has_file.boolean = True
     has_file.short_description = "Has PDF?"
 
 

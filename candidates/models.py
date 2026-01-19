@@ -2,27 +2,37 @@ from django.db import models
 from django.conf import settings
 from jobs.models import Job
 
-class Application(models.Model):
-    STATUS_CHOICES = [
-        ('APPLIED', 'Applied'),
-        ('SHORTLISTED', 'Shortlisted for Interview'),
-        ('REJECTED', 'Rejected'),
-    ]
+# --- UPDATED KANBAN STAGES ---
+STATUS_CHOICES = (
+    ('APPLIED', 'New Applied'),
+    ('SCREENING', 'Screening'),
+    ('INTERVIEW', 'Interview'),
+    ('CLIENT_REVIEW', 'Shared with Client'),
+    ('OFFER', 'Offer Sent'),
+    ('HIRED', 'Hired'),
+    ('REJECTED', 'Rejected'),
+)
 
+class Application(models.Model):
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='applications')
     candidate = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='applications')
     
+    # CV Data
     cv_file = models.FileField(upload_to='cvs/')
     cv_text_content = models.TextField(blank=True)
     extracted_data = models.JSONField(default=dict, blank=True)
-    cv_embedding = models.JSONField(default=list, blank=True)
+    
+    # AI Fields
+    # Changed to null=True so we can easily filter non-embedded CVs
+    cv_embedding = models.JSONField(blank=True, null=True) 
     match_score = models.FloatField(default=0.0)
     
+    # Additional Info
     has_reference = models.BooleanField(default=False)
     reference_name = models.CharField(max_length=255, blank=True, null=True)
     interview_date = models.DateTimeField(null=True, blank=True)
     
-    # Default is Applied.
+    # Pipeline Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='APPLIED')
     created_at = models.DateTimeField(auto_now_add=True)
 

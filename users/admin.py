@@ -10,19 +10,17 @@ class CustomUserAdmin(BaseUserAdmin, ModelAdmin):
     form = CustomUserChangeForm
     model = User
     ordering = ['email']
-    list_display = ['email', 'full_name', 'role', 'is_staff', 'is_active']
-    list_filter = ('role', 'is_staff', 'is_active', 'groups')
+    list_display = ['email', 'full_name', 'role', 'is_staff']
+    list_filter = ('role', 'is_staff', 'is_active')
     search_fields = ('email', 'full_name')
     
-    # Layout for "Edit User"
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal Info', {'fields': ('full_name', 'role')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
 
-    # Layout for "Add User" (Must match forms.py fields exactly!)
     add_fieldsets = (
         (None, {
             'classes': ('wide',),

@@ -71,7 +71,7 @@
                 </button>
 
                 <div class="h-16 flex items-center px-6 border-b border-slate-100 whitespace-nowrap shrink-0">
-                    <a href="{% url 'web_test:job_list' %}" class="flex items-center gap-3">
+                    <a href="{% url 'web_test:home' %}" class="flex items-center gap-3">
                         <div class="w-8 h-8 min-w-[2rem] bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md">
                             <i class="bi bi-briefcase-fill"></i>
                         </div>
@@ -82,6 +82,11 @@
                 </div>
 
                 <nav class="flex-1 overflow-y-auto no-scrollbar py-6 px-3 space-y-1">
+                    
+                    <a href="{% url 'web_test:home' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-grid-1x2-fill text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Dashboard</span>
+                    </a>
                     
                     <a href="{% url 'web_test:job_list' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
                         <i class="bi bi-briefcase text-xl min-w-[1.5rem] text-center"></i>
@@ -108,9 +113,15 @@
                         <i class="bi bi-plus-square text-xl min-w-[1.5rem] text-center"></i>
                         <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Post New Job</span>
                     </a>
+                    <a href="{% url 'web_test:talent_pool' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-globe-americas text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Global Talent Pool</span>
+                    </a>
+                    <a href="{% url 'web_test:kanban_board' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 group transition-colors">
+                        <i class="bi bi-kanban text-xl min-w-[1.5rem] text-center"></i>
+                        <span class="font-medium sidebar-text fade-transition whitespace-nowrap">Pipeline Board</span>
+                    </a>
                     {% endif %}
-
-                    {# --- REMOVED EMPLOYEE & PAYROLL SECTIONS --- #}
 
                 </nav>
 

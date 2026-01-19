@@ -9,31 +9,18 @@ class ApplicationAdmin(ModelAdmin):
         'job_title', 
         'match_score_display', 
         'status', 
-        'has_reference', 
         'created_at'
     )
-    list_filter = ('job', 'status', 'has_reference', 'created_at')
-    search_fields = (
-        'candidate__full_name', 
-        'candidate__email', 
-        'job__title', 
-        'reference_name'
-    )
+    list_filter = ('status', 'job__client', 'created_at') 
+    search_fields = ('candidate__full_name', 'candidate__email', 'job__title')
     
-
     fieldsets = (
         ('Application Info', {
             'fields': ('job', 'candidate', 'status', 'cv_file')
         }),
-        ('Reference Info', {
-            'fields': ('has_reference', 'reference_name')
-        }),
-        ('Interview Details', {
-            'fields': ('interview_date',)
-        }),
-        ('AI Analysis (Editable)', {
+        ('AI Analysis', {
             'classes': ('collapse',),
-            'fields': ('match_score', 'extracted_data', 'cv_text_content', 'cv_embedding')
+            'fields': ('match_score', 'extracted_data', 'cv_text_content')
         }),
     )
 
@@ -43,7 +30,7 @@ class ApplicationAdmin(ModelAdmin):
 
     def job_title(self, obj):
         return obj.job.title
-    job_title.short_description = 'Job Applied For'
+    job_title.short_description = 'Role'
 
     def match_score_display(self, obj):
         return f"{obj.match_score}%"

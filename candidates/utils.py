@@ -4,9 +4,10 @@ import re
 from datetime import datetime
 from django.apps import apps
 from numpy.linalg import norm
+from django.conf import settings
+from .models import Application
 
-# --- 1. DEFINE A SAFETY NET OF KEYWORDS ---
-# GLiNER matches context, this matches exact raw text to catch dense lists.
+# --- 1. KEYWORD SAFETY NET ---
 HARD_SKILLS_DB = {
     # Languages
     "python", "java", "c++", "c#", "javascript", "typescript", "php", "ruby", "swift", "kotlin", "go", "rust",
@@ -21,6 +22,19 @@ HARD_SKILLS_DB = {
     # Databases
     "sql", "mysql", "postgresql", "mongodb", "sqlite", "oracle", "firebase", "elasticsearch"
 }
+
+# --- 2. CORE HELPERS ---
+
+def get_local_models():
+    """
+    Retrieves the loaded models directly from jobs/apps.py.
+    This ensures we use the Single Source of Truth (Your Fine-Tuned Model).
+    """
+    try:
+        JobsConfig = apps.get_app_config('jobs')
+        return JobsConfig.gliner_model, JobsConfig.jina_model
+    except LookupError:
+        return None, None
 
 def extract_text_from_pdf(cv_file):
     text = ""
@@ -94,21 +108,70 @@ def calculate_cosine_similarity(vec_a, vec_b):
         return float(np.dot(a, b) / (norm(a) * norm(b)))
     except: return 0.0
 
+# --- 3. TALENT POOL SEARCH (Uses Local Fine-Tuned Model) ---
+
+def search_global_talent(query_text, top_k=10):
+    """
+    Encodes the search query using YOUR custom model and compares it
+    against all candidate embeddings in the database.
+    """
+    # Import inside to avoid circular error
+    # Note: Using apps.get_model is safer than direct import
+    Application = apps.get_model('candidates', 'Application')
+
+    _, jina_model = get_local_models()
+    
+    if not jina_model:
+        print("❌ Search Failed: Local Jina Model not loaded. Check jobs/apps.py")
+        return []
+
+    # 1. Encode the search query using YOUR model
+    try:
+        query_embedding = jina_model.encode(query_text).tolist()
+    except Exception as e:
+        print(f"❌ Encoding Error: {e}")
+        return []
+
+    # 2. Compare with Candidates
+    candidates = Application.objects.filter(cv_embedding__isnull=False)
+    results = []
+
+    for app in candidates:
+        if not app.cv_embedding or len(app.cv_embedding) == 0:
+            continue
+            
+        score = calculate_cosine_similarity(query_embedding, app.cv_embedding)
+        
+        # Threshold: 0.25 is usually a good starting point for cosine similarity
+        if score > 0.25: 
+            results.append({
+                'app': app,
+                'score': round(score * 100, 1),
+                'candidate_name': app.candidate.full_name,
+                'original_job': app.job.title,
+                'email': app.candidate.email
+            })
+
+    # Sort best matches first
+    results.sort(key=lambda x: x['score'], reverse=True)
+    return results[:top_k]
+
+# --- 4. PROCESSING FUNCTION (Uses Local Fine-Tuned Model) ---
+
 def process_application(application_instance):
     print(f"--- Processing Application ID: {application_instance.id} ---")
     
-    try:
-        JobsConfig = apps.get_app_config('jobs')
-        gliner = JobsConfig.gliner_model
-        jina = JobsConfig.jina_model
-    except LookupError: return
+    gliner, jina = get_local_models()
 
-    if not gliner or not jina: return
+    if not gliner or not jina: 
+        print("⚠️ Models not loaded, skipping AI processing.")
+        return
 
     if application_instance.cv_file:
         raw_text = extract_text_from_pdf(application_instance.cv_file)
         application_instance.cv_file.seek(0)
-    else: return
+    else: 
+        return
 
     # Cleaning
     clean_text = raw_text.replace("•", "").replace("●", "").replace("|", "")
@@ -169,18 +232,14 @@ def process_application(application_instance):
                     focused_titles.append(text)
 
         # --- 2. KEYWORD SAFETY NET (REGEX FALLBACK) ---
-        # Catches skills that exist in text but GLiNER missed due to formatting
         existing_skills_lower = {s.lower() for s in focused_skills}
         text_lower = clean_text.lower()
         
         for skill in HARD_SKILLS_DB:
-            # Use regex boundaries \b to ensure we match "Go" but not "Good"
             if skill not in existing_skills_lower:
                 if re.search(r'\b' + re.escape(skill) + r'\b', text_lower):
                     print(f"⚠️ Recovered missing skill via Regex: {skill}")
-                    # Add to extracted data so it shows in UI with a special label
                     unique_data.append({"label": "Skill (Detected)", "text": skill.title()})
-                    # Add to list used for Jina Embedding
                     focused_skills.append(skill.title())
                     existing_skills_lower.add(skill)
 
@@ -190,15 +249,19 @@ def process_application(application_instance):
         print(f"Extraction Error: {e}")
         application_instance.extracted_data = []
 
-    # Jina Embedding
-    # Now includes both AI-found and Regex-recovered skills
-    rich_context = f"Role: {', '.join(focused_titles)}. Skills: {', '.join(focused_skills)}. Exp: {total_years} years. Full: {clean_text}"
+    # Jina Embedding (YOUR FINE-TUNED JINA)
+    # Use first 2000 chars of clean text + metadata
+    rich_context = f"Role: {', '.join(focused_titles)}. Skills: {', '.join(focused_skills)}. Exp: {total_years} years. Full: {clean_text[:2000]}"
     
     try:
-        application_instance.cv_embedding = jina.encode(rich_context).tolist()
-    except: return
+        # Use local model .encode()
+        embedding = jina.encode(rich_context).tolist()
+        application_instance.cv_embedding = embedding
+        print("✅ Fine-Tuned Embedding Generated")
+    except Exception as e:
+        print(f"❌ Embedding Error: {e}")
 
-    # Scoring
+    # Match Score against Job
     if application_instance.job.jina_embedding:
         sim = calculate_cosine_similarity(application_instance.cv_embedding, application_instance.job.jina_embedding)
         application_instance.match_score = round(sim * 100, 2)
