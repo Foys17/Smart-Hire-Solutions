@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'jobs',
     'candidates',
     'frontend',
-    'employees',
+    
 ]
 
 SITE_ID = 1
@@ -214,7 +214,6 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 UNFOLD = {
     "SITE_TITLE": "Smart Hire Admin",
     "SITE_HEADER": "Smart Hire Solutions",
-    # "SITE_ICON": {...} # Keep your icon config if you have it
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": False,
@@ -226,7 +225,6 @@ UNFOLD = {
                     {
                         "title": "Jobs",
                         "icon": "work",
-                        # Fix: Use reverse_lazy
                         "link": reverse_lazy("admin:jobs_job_changelist"), 
                     },
                     {
@@ -236,27 +234,7 @@ UNFOLD = {
                     },
                 ],
             },
-            {
-                "title": "Organization",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Employees",
-                        "icon": "groups",
-                        "link": reverse_lazy("admin:employees_employee_changelist"),
-                    },
-                    {
-                        "title": "Payroll",
-                        "icon": "payments",
-                        "link": reverse_lazy("admin:employees_payroll_changelist"),
-                    },
-                    {
-                        "title": "Leaves",
-                        "icon": "event_busy",
-                        "link": reverse_lazy("admin:employees_leaverequest_changelist"),
-                    },
-                ],
-            },
+            # DELETED: The entire "Organization" section (Employees, Payroll, Leaves)
             {
                 "title": "System",
                 "separator": True,
