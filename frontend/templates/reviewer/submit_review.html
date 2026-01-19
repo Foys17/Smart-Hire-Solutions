@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'web_test:reviewer_dashboard' %}" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Interview Scorecard</h1>
+            <p class="text-slate-500">Candidate: <span class="font-bold text-indigo-600">{{ app.candidate.full_name }}</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                <h3 class="font-bold text-slate-800 mb-4">Job Details</h3>
+                <p class="text-sm text-slate-500 mb-1">Position</p>
+                <p class="font-semibold text-slate-900 mb-4">{{ app.job.title }}</p>
+                
+                <p class="text-sm text-slate-500 mb-1">AI Match Score</p>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 mb-1">
+                    <div class="bg-indigo-600 h-2.5 rounded-full" style="width: {{ app.match_score }}%"></div>
+                </div>
+                <p class="text-xs text-right text-indigo-600 font-bold">{{ app.match_score }}% Match</p>
+            </div>
+
+            {% if app.cv_file %}
+            <a href="{{ app.cv_file.url }}" target="_blank" class="block w-full py-3 border border-slate-300 text-slate-700 font-bold text-center rounded-xl hover:bg-slate-50 transition-colors">
+                <i class="bi bi-file-earmark-pdf mr-2"></i> View Resume PDF
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="lg:col-span-2">
+            <form method="post" class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+                {% csrf_token %}
+                
+                <h3 class="text-xl font-bold text-slate-900 mb-6">Evaluation</h3>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="flex justify-between font-semibold text-slate-700 mb-2">
+                            Technical Skills <span class="text-slate-400 font-normal">(1-10)</span>
+                        </label>
+                        {{ form.technical_score }}
+                        <p class="text-xs text-slate-400 mt-1">Coding capabilities, framework knowledge, system design.</p>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between font-semibold text-slate-700 mb-2">
+                            Problem Solving <span class="text-slate-400 font-normal">(1-10)</span>
+                        </label>
+                        {{ form.problem_solving_score }}
+                        <p class="text-xs text-slate-400 mt-1">Logical thinking, approach to challenges, debugging.</p>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between font-semibold text-slate-700 mb-2">
+                            Communication <span class="text-slate-400 font-normal">(1-10)</span>
+                        </label>
+                        {{ form.communication_score }}
+                        <p class="text-xs text-slate-400 mt-1">Clarity, articulation, listening skills.</p>
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between font-semibold text-slate-700 mb-2">
+                            Cultural Fit <span class="text-slate-400 font-normal">(1-10)</span>
+                        </label>
+                        {{ form.cultural_fit_score }}
+                        <p class="text-xs text-slate-400 mt-1">Attitude, teamwork, enthusiasm.</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100">
+                        <label class="block font-semibold text-slate-700 mb-2">Detailed Feedback</label>
+                        {{ form.comments }}
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-100">
+                    <button type="submit" onclick="return confirm('Submit this evaluation? This cannot be edited later.')"
+                            class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all">
+                        Submit Scorecard
+                    </button>
+                    <p class="text-center text-xs text-slate-400 mt-3">
+                        <i class="bi bi-info-circle mr-1"></i> Candidates scoring >7.0 average are automatically sent to the Client.
+                    </p>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

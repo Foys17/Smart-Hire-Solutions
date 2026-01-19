@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12">
+    
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-slate-900">Request a New Hire</h1>
+        <p class="text-slate-500 mt-2">Tell us who you need, and we'll start the sourcing process.</p>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">1. The Role</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Job Title</label>
+                    {{ form.title }}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Target Candidates</label>
+                        {{ form.target_candidates_count }}
+                        <p class="text-xs text-slate-400 mt-1">How many hires do you need?</p>
+                    </div>
+                    <div class="flex items-center pt-6">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            {{ form.client_does_final_interview }}
+                            <span class="text-sm font-medium text-slate-700">I want to conduct the Final Interview</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2 pt-4">2. Job Details</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Job Description (Text)</label>
+                    {{ form.description_text }}
+                </div>
+                
+                <div class="text-center text-slate-400 text-sm my-2">- OR -</div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Upload JD (PDF)</label>
+                    {{ form.description_file }}
+                </div>
+            </div>
+
+            <div class="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
+                <h3 class="text-lg font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                    <i class="bi bi-lightning-charge-fill"></i> Automated Screening
+                </h3>
+                <p class="text-sm text-indigo-700 mb-4">
+                    We can automatically reject candidates who don't pass your primary technical assessment.
+                </p>
+
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        {{ form.has_primary_exam }}
+                        <span class="text-sm font-bold text-indigo-900">Enable Primary Exam Filter</span>
+                    </label>
+
+                    <div class="pl-7 grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-indigo-800 mb-1">Passing Score (%)</label>
+                            {{ form.exam_passing_score }}
+                            <p class="text-xs text-indigo-600 mt-1">Candidates scoring below this will be auto-rejected.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6">
+                <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    Submit Request
+                </button>
+                <p class="text-center text-xs text-slate-400 mt-4">
+                    Your request will be reviewed by our HR team before going live.
+                </p>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

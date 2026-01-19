@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Pending Job Requests</h1>
+            <p class="text-slate-500 mt-1">Review and approve new job requisitions from clients.</p>
+        </div>
+        <div class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-bold">
+            {{ jobs.count }} Pending
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        {% for job in jobs %}
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+            
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
+
+            <div class="flex flex-col md:flex-row justify-between items-start gap-6 pl-4">
+                
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <h3 class="text-xl font-bold text-slate-900">{{ job.title }}</h3>
+                        <span class="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded uppercase">
+                            {{ job.target_candidates_count }} Openings
+                        </span>
+                    </div>
+
+                    <p class="text-sm text-slate-500 mb-4">
+                        Requested by <span class="font-bold text-slate-800">{{ job.client_contact.full_name }}</span> 
+                        on {{ job.created_at|date:"M d, Y" }}
+                    </p>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-slate-700 text-sm leading-relaxed mb-4">
+                        {% if job.description_text %}
+                            {{ job.description_text|linebreaksbr|truncatechars:300 }}
+                        {% else %}
+                            <em class="text-slate-400">No text description provided.</em>
+                        {% endif %}
+                        
+                        {% if job.description_file %}
+                        <div class="mt-3 pt-3 border-t border-slate-200">
+                            <a href="{{ job.description_file.url }}" target="_blank" class="inline-flex items-center text-indigo-600 font-bold hover:underline">
+                                <i class="bi bi-file-earmark-pdf-fill mr-1"></i> View Attached PDF
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        {% if job.client_does_final_interview %}
+                        <span class="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full border border-blue-100">
+                            <i class="bi bi-person-video2 mr-1"></i> Client Interview Required
+                        </span>
+                        {% endif %}
+
+                        {% if job.has_primary_exam %}
+                        <span class="inline-flex items-center px-3 py-1 bg-purple-50 text-purple-700 text-xs font-bold rounded-full border border-purple-100">
+                            <i class="bi bi-lightning-charge-fill mr-1"></i> Exam Filter ({{ job.exam_passing_score }}%)
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 min-w-[200px]">
+                    <a href="{% url 'web_test:hr_approve_request' job.id %}" 
+                    onclick="return confirm('Approve this job? It will go live immediately.')"
+                    class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md transition-all text-center flex items-center justify-center gap-2">
+                        <i class="bi bi-check-lg"></i> Approve & Post
+                    </a>
+                    
+                    <a href="{% url 'web_test:hr_reject_request' job.id %}" 
+                    onclick="return confirm('Reject and delete this request?')"
+                    class="w-full py-3 bg-white border border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 transition-all text-center flex items-center justify-center gap-2">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </a>
+                    
+                    </div>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <i class="bi bi-inbox text-3xl text-slate-300"></i>
+            </div>
+            <h3 class="text-lg font-medium text-slate-900">All caught up!</h3>
+            <p class="text-slate-500 mt-1">There are no pending requests to review.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

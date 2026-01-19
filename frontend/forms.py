@@ -1,10 +1,9 @@
 from django import forms
-from jobs.models import Job
+from jobs.models import Job, Question
 from candidates.models import Application
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
-
-
+from reviewer.models import InterviewScore
 
 User = get_user_model()
 
@@ -85,25 +84,25 @@ class UserLoginForm(AuthenticationForm):
     }))
 
 class UserRegistrationForm(UserCreationForm):
-    full_name = forms.CharField(widget=forms.TextInput(attrs={
-        'class': INPUT_STYLE, 
-        'placeholder': 'Mahedy Hasan'
-    }))
+    full_name = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Full Name'}))
     
+    # Role Selection (Candidate or Client)
+    role = forms.ChoiceField(
+        choices=[('Candidate', 'Candidate'), ('Client', 'Client')],
+        widget=forms.Select(attrs={'class': SELECT_STYLE})
+    )
 
     class Meta:
         model = User
-        fields = ('email', 'full_name')
+        fields = ('email', 'full_name', 'role') 
         widgets = {
-            'email': forms.EmailInput(attrs={
-                'class': INPUT_STYLE, 
-                'placeholder': 'name@company.com'
-            }),
+            'email': forms.EmailInput(attrs={'class': INPUT_STYLE, 'placeholder': 'name@company.com'}),
         }
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.role = User.Roles.CANDIDATE
+        # Role is saved from the form data automatically if included in fields, 
+        # but we explicitly save user to ensure commit logic holds
         if commit:
             user.save()
         return user
@@ -130,6 +129,13 @@ class HRUploadCVForm(forms.Form):
 
 class InterviewInviteForm(forms.Form):
     application_ids = forms.CharField(widget=forms.HiddenInput())
+    reviewer = forms.ModelChoiceField(
+        queryset=User.objects.filter(role='Reviewer'), # Now this will find your user!
+        widget=forms.Select(attrs={'class': 'w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all'}),
+        label="Assign Reviewer",
+        required=True,
+        empty_label="Select a Team Member"
+    )
     date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
         label="Interview Date"
@@ -157,7 +163,6 @@ class InterviewInviteForm(forms.Form):
     )
 
 class CVBuilderForm(forms.Form):
-    # Removed Experience, Education, Projects textareas to use dynamic list inputs instead
     full_name = forms.CharField(
         label="Full Name", 
         widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Jane Doe'})
@@ -191,3 +196,73 @@ class CVBuilderForm(forms.Form):
     )
 
 
+# --- CLIENT REQUEST FORM (UPDATED WITH VALIDATION) ---
+class ClientJobRequestForm(forms.ModelForm):
+    class Meta:
+        model = Job
+        fields = [
+            'title', 'description_text', 'description_file', 
+            'target_candidates_count', 'client_does_final_interview',
+            'has_primary_exam', 'exam_passing_score'
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={'class': INPUT_STYLE}),
+            'description_text': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4}),
+            'description_file': forms.FileInput(attrs={'class': FILE_INPUT_STYLE}),
+            'target_candidates_count': forms.NumberInput(attrs={'class': INPUT_STYLE}),
+            'exam_passing_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': '60'}),
+        }
+
+    # --- ADDED VALIDATION LOGIC ---
+    def clean(self):
+        cleaned_data = super().clean()
+        desc_text = cleaned_data.get('description_text')
+        desc_file = cleaned_data.get('description_file')
+
+        if not desc_text and not desc_file:
+            raise forms.ValidationError("You must provide either Job Description Text OR upload a PDF file.")
+
+        if desc_text and desc_file:
+            raise forms.ValidationError("Please provide ONLY one source: either paste Text OR upload a File, not both.")
+
+        return cleaned_data
+
+
+# --- QUESTION ADDITION FORM ---
+class QuestionForm(forms.ModelForm):
+    # We manually create fields for the 4 options to make it easy for the client
+    option_1 = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Option A'}))
+    option_2 = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Option B'}))
+    option_3 = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Option C'}))
+    option_4 = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Option D'}))
+    
+    correct_option = forms.ChoiceField(
+        choices=[('0', 'Option A'), ('1', 'Option B'), ('2', 'Option C'), ('3', 'Option D')],
+        widget=forms.Select(attrs={'class': SELECT_STYLE})
+    )
+
+    class Meta:
+        model = Question
+        fields = ['text']
+        widgets = {
+            'text': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 2, 'placeholder': 'Enter the Question Text here...'}),
+        }
+
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = InterviewScore
+        fields = [
+            'technical_score', 
+            'communication_score', 
+            'problem_solving_score', 
+            'cultural_fit_score', 
+            'comments'
+        ]
+        widgets = {
+            'technical_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'max': 10, 'placeholder': '1-10'}),
+            'communication_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'max': 10, 'placeholder': '1-10'}),
+            'problem_solving_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'max': 10, 'placeholder': '1-10'}),
+            'cultural_fit_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'max': 10, 'placeholder': '1-10'}),
+            'comments': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'Write your detailed feedback here...'}),
+        }

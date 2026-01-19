@@ -4,10 +4,12 @@ from jobs.models import Job
 
 # --- UPDATED KANBAN STAGES ---
 STATUS_CHOICES = (
+    ('PENDING_EXAM', 'Pending Exam'),
     ('APPLIED', 'New Applied'),
     ('SCREENING', 'Screening'),
-    ('INTERVIEW', 'Interview'),
+    ('INTERVIEW', 'Internal Interview'),
     ('CLIENT_REVIEW', 'Shared with Client'),
+    ('FINAL_INTERVIEW', 'Final Interview'),
     ('OFFER', 'Offer Sent'),
     ('HIRED', 'Hired'),
     ('REJECTED', 'Rejected'),
@@ -36,8 +38,18 @@ class Application(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='APPLIED')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    assigned_reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='assigned_interviews'
+    )
+
     class Meta:
         unique_together = ('job', 'candidate')
 
     def __str__(self):
         return f"{self.candidate.full_name} -> {self.job.title} ({self.status})"
+    
+    

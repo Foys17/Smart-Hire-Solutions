@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{% url 'web_test:client_dashboard' %}" class="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Review Candidates</h1>
+            <p class="text-slate-500">Job: <span class="font-bold text-indigo-600">{{ job.title }}</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {% for app in candidates %}
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg">
+                        {{ app.candidate.full_name|first }}
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-900">{{ app.candidate.full_name }}</h3>
+                        <p class="text-sm text-slate-500">Applied {{ app.created_at|date:"M d" }}</p>
+                    </div>
+                </div>
+                <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                    {{ app.match_score }}% AI Match
+                </span>
+            </div>
+
+            {% if app.interview_score %}
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Tech Interview Score</h4>
+                    <span class="text-lg font-bold text-indigo-600">{{ app.interview_score.average_score }} / 10</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-y-2 text-sm text-slate-600 mb-3">
+                    <div class="flex justify-between pr-4"><span>Technical:</span> <span class="font-semibold">{{ app.interview_score.technical_score }}</span></div>
+                    <div class="flex justify-between"><span>Problem Solving:</span> <span class="font-semibold">{{ app.interview_score.problem_solving_score }}</span></div>
+                    <div class="flex justify-between pr-4"><span>Communication:</span> <span class="font-semibold">{{ app.interview_score.communication_score }}</span></div>
+                    <div class="flex justify-between"><span>Culture Fit:</span> <span class="font-semibold">{{ app.interview_score.cultural_fit_score }}</span></div>
+                </div>
+
+                {% if app.interview_score.comments %}
+                <div class="mt-2 pt-2 border-t border-slate-200">
+                    <p class="text-xs text-slate-500 italic">"{{ app.interview_score.comments }}"</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="flex gap-4 mb-6">
+                {% if app.cv_file %}
+                <a href="{{ app.cv_file.url }}" target="_blank" class="text-sm font-semibold text-slate-600 hover:text-indigo-600">
+                    <i class="bi bi-file-earmark-pdf"></i> View Resume
+                </a>
+                {% endif %}
+                <a href="#" class="text-sm font-semibold text-slate-600 hover:text-indigo-600">
+                    <i class="bi bi-linkedin"></i> LinkedIn Profile
+                </a>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <a href="{% url 'web_test:client_decision' app.id 'approve' %}" onclick="return confirm('Proceed to Final Interview?')" 
+                   class="py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-center rounded-xl transition-colors">
+                    Request Interview
+                </a>
+                <a href="{% url 'web_test:client_decision' app.id 'reject' %}" onclick="return confirm('Reject this candidate?')" 
+                   class="py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold text-center rounded-xl transition-colors">
+                    Not a Fit
+                </a>
+            </div>
+
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <p class="text-slate-500">No candidates ready for review yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
