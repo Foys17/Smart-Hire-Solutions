@@ -15,6 +15,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import MyTokenObtainPairSerializer, RegisterSerializer
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+from .models import Notification
 
 User = get_user_model()
 
@@ -84,3 +87,10 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+    
+@login_required
+def mark_notifications_read(request):
+    # Mark all unread notifications for this user as read
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    # Redirect back to wherever they came from
+    return redirect(request.META.get('HTTP_REFERER', 'web_test:home'))

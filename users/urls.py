@@ -1,11 +1,13 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView  
+from . import views
 
 from .views import (
     MyTokenView,
     RequestMagicLinkView,
     MagicLoginView,
-    RegisterView,  
+    RegisterView, 
+    
 )
 app_name = "users"
 
@@ -22,4 +24,6 @@ urlpatterns = [
 
     # --- JWT Token Refresh ---
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"), 
+
+    path('notifications/read/', views.mark_notifications_read, name='mark_notifications_read'),
 ]

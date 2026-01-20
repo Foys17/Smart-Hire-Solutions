@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    
+    <div class="bg-white border border-slate-200 rounded-none md:rounded-lg shadow-xl overflow-hidden relative min-h-[800px]">
+        
+        <div class="h-4 bg-indigo-600 w-full"></div>
+        
+        <div class="p-8 md:p-16">
+            
+            <div class="flex justify-between items-start mb-12">
+                <div>
+                    <h1 class="text-4xl font-display font-bold text-slate-900 mb-2">Job Offer</h1>
+                    <p class="text-slate-500">Ref: {{ app.job.title }} / {{ now|date:"Y" }}</p>
+                </div>
+                <div class="text-right">
+                    <h2 class="text-xl font-bold text-indigo-600">Smart Hire Solutions</h2>
+                    <p class="text-sm text-slate-400">Dhaka, Bangladesh</p>
+                    <p class="text-sm text-slate-400">{{ now|date:"M d, Y" }}</p>
+                </div>
+            </div>
+
+            <div class="prose max-w-none text-slate-700 mb-12">
+                <p class="text-lg">Dear <strong>{{ app.candidate.full_name }}</strong>,</p>
+                
+                <p>We are pleased to offer you the position of <strong class="text-indigo-600">{{ app.job.title }}</strong> at Smart Hire Solutions. We were impressed by your skills and experience during the interview process.</p>
+                
+                <h3 class="text-lg font-bold text-slate-900 mt-6 mb-3">Terms of Employment</h3>
+                
+                <ul class="space-y-2 list-none pl-0">
+                    <li class="flex items-center gap-3">
+                        <span class="w-24 font-bold text-slate-500">Salary:</span>
+                        <span class="font-semibold text-slate-900">${{ offer.salary }} / year</span>
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="w-24 font-bold text-slate-500">Start Date:</span>
+                        <span class="font-semibold text-slate-900">{{ offer.start_date }}</span>
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="w-24 font-bold text-slate-500">Expiration:</span>
+                        <span class="text-red-500 font-semibold">{{ offer.expiration_date }}</span>
+                    </li>
+                </ul>
+
+                <h3 class="text-lg font-bold text-slate-900 mt-6 mb-3">Benefits</h3>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm whitespace-pre-line">
+                    {{ offer.benefits }}
+                </div>
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-slate-200">
+                
+                {% if offer.status == 'PENDING' %}
+                    <p class="text-center text-slate-500 mb-6">Please indicate your acceptance by clicking the button below.</p>
+                    
+                    <div class="flex gap-4 justify-center">
+                        <a href="{% url 'web_test:respond_offer' offer.id 'accept' %}" onclick="return confirm('Officially accept this offer?')"
+                           class="px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2">
+                            <i class="bi bi-check-circle-fill"></i> Accept Offer
+                        </a>
+                        
+                        <a href="{% url 'web_test:respond_offer' offer.id 'decline' %}" onclick="return confirm('Are you sure you want to decline?')"
+                           class="px-8 py-4 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl hover:shadow-md transition-all">
+                            Decline
+                        </a>
+                    </div>
+
+                {% elif offer.status == 'ACCEPTED' %}
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                        <i class="bi bi-check-circle-fill text-4xl text-green-600 mb-2 block"></i>
+                        <h3 class="text-2xl font-bold text-green-800">Offer Accepted!</h3>
+                        <p class="text-green-700">Welcome to the team. HR will contact you shortly for onboarding.</p>
+                    </div>
+
+                {% elif offer.status == 'DECLINED' %}
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                        <i class="bi bi-x-circle-fill text-4xl text-red-600 mb-2 block"></i>
+                        <h3 class="text-2xl font-bold text-red-800">Offer Declined</h3>
+                        <p class="text-red-700">You have declined this position.</p>
+                    </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

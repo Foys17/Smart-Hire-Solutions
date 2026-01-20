@@ -37,6 +37,7 @@ class Application(models.Model):
     # Pipeline Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='APPLIED')
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     assigned_reviewer = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -51,5 +52,26 @@ class Application(models.Model):
 
     def __str__(self):
         return f"{self.candidate.full_name} -> {self.job.title} ({self.status})"
+    
+
+class Offer(models.Model):
+    application = models.OneToOneField(Application, on_delete=models.CASCADE, related_name='offer_letter')
+    salary = models.DecimalField(max_digits=10, decimal_places=2, help_text="Monthly or Yearly Salary")
+    start_date = models.DateField()
+    benefits = models.TextField(blank=True, help_text="List of benefits (Health, Remote, etc.)")
+    expiration_date = models.DateField(null=True, blank=True)
+    
+    # Status of the specific offer document
+    status = models.CharField(max_length=20, choices=[
+        ('PENDING', 'Pending Decision'),
+        ('ACCEPTED', 'Accepted'),
+        ('DECLINED', 'Declined')
+    ], default='PENDING')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Offer for {self.application.candidate.full_name} - {self.status}"
     
     

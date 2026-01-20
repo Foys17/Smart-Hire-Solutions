@@ -11,10 +11,11 @@ import uuid
 import json
 
 from jobs.models import Job,Question
-from candidates.models import Application
+from candidates.models import Application,Offer
 from candidates.utils import process_application, search_global_talent, extract_text_from_pdf
-from frontend.forms import ApplicationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm
+from frontend.forms import ApplicationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm,OfferForm
 from frontend.utils import generate_ats_cv
+from users.models import Notification
 
 User = get_user_model()
 
@@ -398,7 +399,17 @@ def quick_move_candidate(request, app_id, target_stage):
     app.status = target_stage
     app.save()
 
-    messages.success(request, f"Moved {app.candidate.full_name} to {app.get_status_display()}")
+    # --- NOTIFICATION LOGIC ---
+    if target_stage == 'CLIENT_REVIEW' and app.job.client_contact:
+        Notification.objects.create(
+            user=app.job.client_contact,
+            message=f"Candidate Ready for Review: {app.candidate.full_name}",
+            link=reverse('web_test:client_dashboard')
+        )
+        messages.success(request, f"Moved to Client & Notification sent to {app.job.client_contact.full_name}")
+    else:
+        messages.success(request, f"Moved {app.candidate.full_name} to {app.get_status_display()}")
+
     return redirect('web_test:kanban_board')
 
 @login_required
@@ -425,7 +436,12 @@ def schedule_interview_view(request, app_id):
             app.assigned_reviewer = form.cleaned_data['reviewer']
             app.save()
             
-            # 2. (Optional) Create an Event model or Send Email here using form.cleaned_data['date']
+            # 2. Notify Reviewer
+            Notification.objects.create(
+                user=app.assigned_reviewer,
+                message=f"New Interview: {app.candidate.full_name} for {app.job.title}",
+                link=reverse('web_test:reviewer_dashboard')
+            )
             
             messages.success(request, f"Interview scheduled with {app.assigned_reviewer.full_name}")
             return redirect('web_test:kanban_board')
@@ -434,3 +450,103 @@ def schedule_interview_view(request, app_id):
         form = InterviewInviteForm(initial={'application_ids': app.id})
 
     return render(request, 'hr/schedule_interview.html', {'form': form, 'app': app})
+
+
+
+@login_required
+def create_offer(request, application_id):
+    # Security: HR/Admin Only
+    if request.user.role not in ['HR', 'Admin']:
+        return redirect('web_test:home')
+        
+    app = get_object_or_404(Application, pk=application_id)
+    
+    # Check if offer exists to allow editing
+    try:
+        existing_offer = app.offer_letter
+    except Offer.DoesNotExist:
+        existing_offer = None
+
+    if request.method == 'POST':
+        form = OfferForm(request.POST, instance=existing_offer)
+        if form.is_valid():
+            offer = form.save(commit=False)
+            offer.application = app
+            offer.save()
+            
+            # Update Status
+            app.status = 'OFFER'
+            app.save()
+            
+            # --- NOTIFY CANDIDATE ---
+            Notification.objects.create(
+                user=app.candidate,
+                message=f"🎉 Congratulations! You have received a job offer for {app.job.title}.",
+                link=reverse('web_test:view_offer', args=[app.id])
+            )
+            
+            action = "updated" if existing_offer else "created"
+            messages.success(request, f"Offer {action} and sent to {app.candidate.full_name}!")
+            return redirect('web_test:kanban_board')
+    else:
+        form = OfferForm(instance=existing_offer)
+        
+    return render(request, 'hr/create_offer.html', {'form': form, 'app': app})
+
+@login_required
+def view_offer(request, application_id):
+    app = get_object_or_404(Application, pk=application_id)
+    
+    if request.user != app.candidate and request.user.role not in ['HR', 'Admin']:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+        
+    try:
+        offer = app.offer_letter
+    except Offer.DoesNotExist:
+        messages.error(request, "No offer details found.")
+        return redirect('web_test:home')
+
+    return render(request, 'candidates/view_offer.html', {'offer': offer, 'app': app})
+
+@login_required
+def respond_offer(request, offer_id, response):
+    offer = get_object_or_404(Offer, pk=offer_id)
+    
+    # Ensure only the candidate can respond
+    if request.user != offer.application.candidate:
+        messages.error(request, "Unauthorized")
+        return redirect('web_test:home')
+        
+    # Get HR Contact (Job Poster)
+    hr_contact = offer.application.job.posted_by
+
+    if response == 'accept':
+        offer.status = 'ACCEPTED'
+        offer.application.status = 'HIRED'
+        messages.success(request, "Congratulations! You have accepted the job.")
+        
+        # --- NOTIFY HR ---
+        if hr_contact:
+            Notification.objects.create(
+                user=hr_contact,
+                message=f"OFFER ACCEPTED: {offer.application.candidate.full_name} has joined the team!",
+                link=reverse('web_test:kanban_board')
+            )
+
+    elif response == 'decline':
+        offer.status = 'DECLINED'
+        offer.application.status = 'REJECTED' 
+        messages.info(request, "You have declined the offer.")
+        
+        # --- NOTIFY HR ---
+        if hr_contact:
+            Notification.objects.create(
+                user=hr_contact,
+                message=f"Offer Declined: {offer.application.candidate.full_name} has declined the role.",
+                link=reverse('web_test:kanban_board')
+            )
+        
+    offer.save()
+    offer.application.save()
+    return redirect('web_test:home')

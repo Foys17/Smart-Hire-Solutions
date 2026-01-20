@@ -1,6 +1,6 @@
 from django import forms
 from jobs.models import Job, Question
-from candidates.models import Application
+from candidates.models import Application,Offer
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from reviewer.models import InterviewScore
@@ -265,4 +265,16 @@ class ReviewForm(forms.ModelForm):
             'problem_solving_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'max': 10, 'placeholder': '1-10'}),
             'cultural_fit_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'max': 10, 'placeholder': '1-10'}),
             'comments': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'Write your detailed feedback here...'}),
+        }
+
+
+class OfferForm(forms.ModelForm):
+    class Meta:
+        model = Offer
+        fields = ['salary', 'start_date', 'expiration_date', 'benefits']
+        widgets = {
+            'salary': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. 50000'}),
+            'start_date': forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
+            'expiration_date': forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
+            'benefits': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': '- Health Insurance\n- Remote Work\n- Laptop provided'}),
         }

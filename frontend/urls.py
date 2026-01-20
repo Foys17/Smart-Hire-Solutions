@@ -65,4 +65,10 @@ urlpatterns = [
     path('candidate/move/<int:app_id>/<str:target_stage>/', views.quick_move_candidate, name='quick_move'),
     path('candidate/<int:app_id>/schedule/', views.schedule_interview_view, name='schedule_interview'),
 
+
+    # --- OFFER MANAGEMENT ---
+    path('application/<int:application_id>/create-offer/', views.create_offer, name='create_offer'),
+    path('application/<int:application_id>/view-offer/', views.view_offer, name='view_offer'),
+    path('offer/<int:offer_id>/respond/<str:response>/', views.respond_offer, name='respond_offer'),
 ]
+

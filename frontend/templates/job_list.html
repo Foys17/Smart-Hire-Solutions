@@ -3,15 +3,15 @@
 {% block content %}
 <div class="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 font-sans">
     
-    <div class="max-w-7xl mx-auto mb-12 border-b border-slate-200 pb-8">
+    <div class="max-w-7xl mx-auto mb-8">
         
-        <div class="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8 border-b border-slate-200 pb-8">
             <div>
                 <h2 class="text-4xl font-extrabold tracking-tight text-slate-900">
                     Available Opportunities
                 </h2>
                 <p class="mt-2 text-lg text-slate-500 max-w-2xl">
-                    Explore open positions and find the perfect match for your skills.
+                    Explore open positions across our partner network.
                 </p>
             </div>
             
@@ -22,6 +22,33 @@
             </a>
             {% endif %}
         </div>
+
+        <form method="get" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
+            
+            <div class="relative flex-1 w-full">
+                <i class="bi bi-building absolute left-4 top-3.5 text-slate-400"></i>
+                <select name="client" class="w-full pl-11 pr-10 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-sm font-medium appearance-none cursor-pointer bg-white text-slate-600">
+                    <option value="">All Clients</option>
+                    {% for client in clients %}
+                        <option value="{{ client.id }}" {% if selected_client|stringformat:"s" == client.id|stringformat:"s" %}selected{% endif %}>
+                            {{ client.full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <i class="bi bi-chevron-down absolute right-4 top-4 text-xs text-slate-400 pointer-events-none"></i>
+            </div>
+
+            <button type="submit" class="w-full md:w-auto px-8 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors shadow-lg shadow-slate-200">
+                Filter
+            </button>
+            
+            {% if selected_client %}
+            <a href="{% url 'web_test:job_list' %}" class="px-4 py-3 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors" title="Clear Filters">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </form>
+
     </div>
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -31,7 +58,11 @@
             <div class="p-8 flex-1">
                 <div class="flex justify-between items-start mb-6">
                     <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 shadow-sm">
-                        <i class="bi bi-briefcase-fill text-xl"></i>
+                        {% if job.client_contact.full_name %}
+                            <span class="text-xl font-bold">{{ job.client_contact.full_name|first|upper }}</span>
+                        {% else %}
+                            <i class="bi bi-briefcase-fill text-xl"></i>
+                        {% endif %}
                     </div>
                     
                     {% if job.status == 'OPEN' %}
@@ -47,9 +78,14 @@
                     {% endif %}
                 </div>
 
-                <h3 class="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-1">
-                    {{ job.title }}
-                </h3>
+                <div class="mb-3">
+                    <p class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+                        {{ job.client_contact.full_name|default:"Internal" }}
+                    </p>
+                    <h3 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
+                        {{ job.title }}
+                    </h3>
+                </div>
                 
                 <p class="text-sm text-slate-500 line-clamp-3 mb-6 leading-relaxed">
                     {{ job.description_text|default:"No description provided for this role." }}
@@ -57,8 +93,8 @@
                 
                 <div class="flex items-center gap-3 text-xs font-medium text-slate-400 pt-6 border-t border-slate-50">
                     <div class="flex items-center gap-1.5">
-                        <i class="bi bi-person-circle text-indigo-400"></i>
-                        <span>{{ job.posted_by.full_name }}</span>
+                        <i class="bi bi-geo-alt-fill text-slate-300"></i>
+                        <span>{{ job.location|default:"Remote" }}</span>
                     </div>
                     <span class="text-slate-300">•</span>
                     <div class="flex items-center gap-1.5">
@@ -79,6 +115,7 @@
                         {# === LOGGED IN USERS === #}
                         
                         {% if request.user.role == 'Candidate' %}
+                            {# --- CHECK STATUS vs APPLY NOW --- #}
                             {% if job.current_user_status %}
                                 <a href="{% url 'web_test:candidate_job_status' job.id %}" class="inline-flex items-center rounded-xl bg-white border border-indigo-200 px-4 py-2 text-xs font-bold text-indigo-600 shadow-sm hover:bg-indigo-50 transition-all active:scale-95">
                                     <i class="bi bi-check-circle-fill mr-1.5"></i> Check Status
@@ -121,12 +158,15 @@
             </div>
             <h3 class="text-xl font-bold text-slate-900">No jobs found</h3>
             <p class="text-slate-500 max-w-md mt-2">
-                There are no listings available right now. 
-                {% if request.user.is_authenticated and request.user.role == 'HR' %}Get started by posting a new opportunity!{% endif %}
+                Try adjusting your filters to find what you're looking for.
             </p>
             {% if request.user.is_authenticated and request.user.role == 'HR' %}
             <a href="{% url 'web_test:create_job' %}" class="mt-8 inline-flex items-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
                 Create First Job
+            </a>
+            {% else %}
+            <a href="{% url 'web_test:job_list' %}" class="mt-8 inline-flex items-center rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white hover:bg-slate-800 transition">
+                Clear Filters
             </a>
             {% endif %}
         </div>

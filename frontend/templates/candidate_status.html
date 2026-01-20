@@ -12,11 +12,37 @@
             </a>
         </div>
 
+        {# --- NEW: OFFER NOTIFICATION SECTION --- #}
+        {% if application.status == 'OFFER' %}
+        <div class="mb-8 p-6 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+            <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+
+            <div class="flex items-center gap-5 relative z-10">
+                <div class="w-14 h-14 bg-white text-indigo-600 rounded-full flex items-center justify-center text-2xl shadow-sm animate-bounce">
+                    <i class="bi bi-gift-fill"></i>
+                </div>
+                <div class="text-white">
+                    <h3 class="text-xl font-bold">Congratulations! Offer Received</h3>
+                    <p class="text-indigo-100 text-sm mt-1">The company has extended an official job offer to you.</p>
+                </div>
+            </div>
+
+            <a href="{% url 'web_test:view_offer' application.id %}" 
+               class="relative z-10 px-6 py-3 bg-white text-indigo-700 font-bold rounded-xl shadow-md hover:bg-indigo-50 hover:shadow-lg transition-all flex items-center gap-2 transform hover:-translate-y-0.5 whitespace-nowrap">
+                <i class="bi bi-envelope-open-text-fill"></i> View Offer Letter
+            </a>
+        </div>
+        {% endif %}
+        {# --------------------------------------- #}
+
         <div class="bg-white rounded-[2rem] shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden relative">
             
             <div class="h-2 w-full bg-gradient-to-r 
                 {% if application.status == 'REJECTED' %}from-red-500 via-orange-500 to-red-500
                 {% elif application.status == 'SHORTLISTED' %}from-emerald-500 via-teal-500 to-emerald-500
+                {% elif application.status == 'OFFER' %}from-indigo-500 via-purple-500 to-indigo-500
+                {% elif application.status == 'HIRED' %}from-green-500 via-emerald-500 to-green-500
                 {% else %}from-blue-500 via-indigo-500 to-blue-500{% endif %}">
             </div>
 
@@ -33,23 +59,31 @@
                     <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -z-10 rounded-full"></div>
                     
                     <div class="absolute top-1/2 left-0 h-1 bg-indigo-500 -z-10 rounded-full transition-all duration-1000"
-                        style="width: {% if application.status == 'APPLIED' %}0%{% elif application.status == 'SHORTLISTED' %}100%{% endif %};">
+                        style="width: {% if application.status == 'APPLIED' %}0%{% elif application.status == 'OFFER' or application.status == 'HIRED' %}100%{% elif application.status == 'SHORTLISTED' %}50%{% endif %};">
                     </div>
 
                     <div class="flex flex-col items-center gap-2">
                         <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
-                            {% if application.status in 'APPLIED,SHORTLISTED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
+                            {% if application.status != 'PENDING_EXAM' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
                             <i class="bi bi-check-lg text-lg"></i>
                         </div>
-                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status in 'APPLIED,SHORTLISTED' %}text-indigo-600{% else %}text-slate-400{% endif %}">Applied</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Applied</span>
                     </div>
 
                     <div class="flex flex-col items-center gap-2">
                         <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
-                            {% if application.status == 'SHORTLISTED' %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
+                            {% if application.status == 'SHORTLISTED' or application.status == 'INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
+                            <i class="bi bi-people-fill text-lg"></i>
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status == 'SHORTLISTED' or application.status == 'INTERVIEW' %}text-indigo-600{% else %}text-slate-400{% endif %}">Screening</span>
+                    </div>
+
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
+                            {% if application.status == 'OFFER' or application.status == 'HIRED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
                             <i class="bi bi-star-fill text-lg"></i>
                         </div>
-                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status == 'SHORTLISTED' %}text-emerald-600{% else %}text-slate-400{% endif %}">Shortlisted</span>
+                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status == 'OFFER' %}text-indigo-600{% else %}text-slate-400{% endif %}">Offer</span>
                     </div>
                 </div>
 
@@ -66,14 +100,16 @@
                 <div class="flex justify-center mb-10">
                     <div class="inline-flex items-center gap-3 px-6 py-3 rounded-full shadow-sm border
                         {% if application.status == 'APPLIED' %}bg-blue-50 border-blue-200 text-blue-700
-                        {% elif application.status == 'SHORTLISTED' %}bg-emerald-50 border-emerald-200 text-emerald-700
-                        {% elif application.status == 'REJECTED' %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+                        {% elif application.status == 'OFFER' %}bg-indigo-50 border-indigo-200 text-indigo-700
+                        {% elif application.status == 'HIRED' %}bg-green-50 border-green-200 text-green-700
+                        {% elif application.status == 'REJECTED' %}bg-slate-50 border-slate-200 text-slate-600
+                        {% else %}bg-emerald-50 border-emerald-200 text-emerald-700{% endif %}">
                         
                         <span class="relative flex h-3 w-3">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 
-                            {% if application.status == 'REJECTED' %}bg-slate-400{% elif application.status == 'SHORTLISTED' %}bg-emerald-400{% else %}bg-indigo-400{% endif %}"></span>
+                            {% if application.status == 'REJECTED' %}bg-slate-400{% elif application.status == 'OFFER' %}bg-indigo-400{% else %}bg-emerald-400{% endif %}"></span>
                           <span class="relative inline-flex rounded-full h-3 w-3 
-                            {% if application.status == 'REJECTED' %}bg-slate-500{% elif application.status == 'SHORTLISTED' %}bg-emerald-500{% else %}bg-indigo-500{% endif %}"></span>
+                            {% if application.status == 'REJECTED' %}bg-slate-500{% elif application.status == 'OFFER' %}bg-indigo-500{% else %}bg-emerald-500{% endif %}"></span>
                         </span>
                         
                         <span class="text-lg font-bold tracking-wide">

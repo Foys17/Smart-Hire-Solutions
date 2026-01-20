@@ -67,11 +67,11 @@
 
             <div class="grid grid-cols-2 gap-4">
                 <a href="{% url 'web_test:client_decision' app.id 'approve' %}" onclick="return confirm('Proceed to Final Interview?')" 
-                   class="py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-center rounded-xl transition-colors">
+                class="py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-center rounded-xl transition-colors">
                     Request Interview
                 </a>
                 <a href="{% url 'web_test:client_decision' app.id 'reject' %}" onclick="return confirm('Reject this candidate?')" 
-                   class="py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold text-center rounded-xl transition-colors">
+                class="py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold text-center rounded-xl transition-colors">
                     Not a Fit
                 </a>
             </div>

@@ -6,13 +6,14 @@ from candidates.models import Application
 from jobs.utils import run_ai_pipeline
 from frontend.forms import JobForm
 from django.db.models import Q
+from django.contrib.auth import get_user_model
 
 def job_list(request):
     query = request.GET.get('q', '')
     location = request.GET.get('location', '')
+    client_id = request.GET.get('client', '') # <--- NEW: Get client filter
     
     # 1. Start with ONLY 'OPEN' jobs
-    # This ensures REQUESTED, CLOSED, or FILLED jobs never appear here
     jobs = Job.objects.filter(status='OPEN') 
 
     # 2. Apply Search Filters
@@ -20,15 +21,48 @@ def job_list(request):
         jobs = jobs.filter(
             Q(title__icontains=query) | 
             Q(description_text__icontains=query) |
-            Q(skills_required__icontains=query) # If you have this field
+            Q(skills_required__icontains=query) 
         )
     
     if location:
-        jobs = jobs.filter(location__icontains=location) # If you have location field
+        jobs = jobs.filter(location__icontains=location) 
 
-    jobs = jobs.order_by('-created_at')
+    # --- NEW: CLIENT FILTER ---
+    if client_id:
+        jobs = jobs.filter(client_contact_id=client_id)
+    
+    # Organize: Sort by Client Name first, then Date
+    jobs = jobs.order_by('client_contact__full_name', '-created_at')
 
-    return render(request, 'job_list.html', {'jobs': jobs, 'query': query})
+    # --- NEW: FETCH CLIENT LIST FOR DROPDOWN ---
+    # Only get users who are clients AND have at least one open job
+    User = get_user_model()
+    clients = User.objects.filter(
+        role='Client', 
+        posted_jobs__status='OPEN'
+    ).distinct().values('id', 'full_name')
+    # -------------------------------------------
+
+    # --- CHECK CANDIDATE STATUS (Existing Logic) ---
+    if request.user.is_authenticated and request.user.role == 'Candidate':
+        user_applications = Application.objects.filter(candidate=request.user).values('job_id', 'status')
+        apps_map = {app['job_id']: app['status'] for app in user_applications}
+        
+        jobs_list = []
+        for job in jobs:
+            job.current_user_status = apps_map.get(job.id) 
+            jobs_list.append(job)
+        jobs = jobs_list
+    # -----------------------------------------------
+
+    context = {
+        'jobs': jobs, 
+        'query': query,
+        'location': location,
+        'selected_client': client_id, # Pass back to keep dropdown selected
+        'clients': clients            # Pass list to template
+    }
+    return render(request, 'job_list.html', context)
 
 def job_detail(request, pk):  
     job = get_object_or_404(Job, pk=pk)
@@ -41,6 +75,12 @@ def job_detail(request, pk):
         if not (is_owner or is_hr):
             messages.error(request, "This job is currently pending approval.")
             return redirect('web_test:job_list')
+
+    # OPTIONAL: Pass status to detail view too if you want the button there to update as well
+    if request.user.is_authenticated and request.user.role == 'Candidate':
+        application = Application.objects.filter(candidate=request.user, job=job).first()
+        if application:
+            job.current_user_status = application.status
 
     return render(request, 'job_detail.html', {'job': job})
 
