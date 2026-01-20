@@ -49,18 +49,22 @@ urlpatterns = [
     path('portal/request/<int:job_id>/edit/', views.client_edit_request, name='client_edit_request'),
     path('portal/request/<int:job_id>/delete/', views.client_delete_request, name='client_delete_request'),
     path('portal/question/<int:question_id>/edit/', views.client_edit_question, name='client_edit_question'),
+    path('portal/schedule/<int:application_id>/', views.client_schedule_interview, name='client_schedule_interview'),
+    path('portal/offer/create/<int:application_id>/', views.client_create_offer, name='client_create_offer'),
 
     # HR Actions
     path('hr/requests/', views.hr_pending_requests, name='hr_pending_requests'),
     path('hr/request/<int:job_id>/approve/', views.hr_approve_request, name='hr_approve_request'),
     path('hr/request/<int:job_id>/reject/', views.hr_reject_request, name='hr_reject_request'),
+    path('hr/schedule/', views.hr_schedule_interview, name='hr_schedule_interview'),
     #for primary exam
     path('exam/<int:application_id>/', views.take_exam, name='take_exam'),
 
     # --- REVIEWER PORTAL ---
     path('reviewer/dashboard/', reviewer_views.reviewer_dashboard, name='reviewer_dashboard'),
     path('reviewer/score/<int:app_id>/', reviewer_views.submit_review, name='submit_review'),
-    path('candidate/<int:app_id>/schedule/', views.schedule_interview_view, name='schedule_interview'),
+    path('reviewer/finish/<int:job_id>/', reviewer_views.finish_interview_process, name='finish_interview_process'),
+    path('reviewer/job/<int:job_id>/', reviewer_views.reviewer_job_detail, name='reviewer_job_detail'),
 
     # --- KANBAN ACTIONS ---
     path('candidate/move/<int:app_id>/<str:target_stage>/', views.quick_move_candidate, name='quick_move'),
@@ -70,6 +74,8 @@ urlpatterns = [
     # --- OFFER MANAGEMENT ---
     path('application/<int:application_id>/create-offer/', views.create_offer, name='create_offer'),
     path('application/<int:application_id>/view-offer/', views.view_offer, name='view_offer'),
-    path('offer/<int:offer_id>/respond/<str:response>/', views.respond_offer, name='respond_offer'),
+    path('offer/respond/<int:application_id>/<str:response>/', views.respond_offer, name='respond_offer'),
+    # Primary Exam
+    path('exam/<int:application_id>/', views.take_exam, name='take_exam'),
 ]
 

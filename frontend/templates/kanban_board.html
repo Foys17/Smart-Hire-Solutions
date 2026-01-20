@@ -8,7 +8,7 @@
     <div class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shrink-0 z-10">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Recruitment Pipeline</h1>
-            <p class="text-sm text-slate-500">Drag candidates or use the menu to move stages.</p>
+            <p class="text-sm text-slate-500">Drag candidates to move them. <span class="text-indigo-600 font-bold">Tip:</span> Moving to "Interview" opens the scheduler.</p>
         </div>
         
         <form method="get" class="flex items-center gap-3">
@@ -26,30 +26,57 @@
     </div>
 
     <div class="flex-1 overflow-x-auto overflow-y-hidden p-6">
-        <div class="flex h-full gap-6 min-w-max">
+        <div class="flex h-full gap-5 min-w-max">
             
             {% for status_code, apps_list in columns.items %}
             <div class="flex flex-col w-80 bg-slate-100/50 rounded-xl border border-slate-200/60 max-h-full">
                 
-                <div class="p-4 border-b border-slate-200/60 flex justify-between items-center bg-white/50 rounded-t-xl backdrop-blur-sm sticky top-0 z-10">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full 
-                            {% if status_code == 'APPLIED' %}bg-blue-500
-                            {% elif status_code == 'SCREENING' %}bg-purple-500
-                            {% elif status_code == 'INTERVIEW' %}bg-amber-500
-                            {% elif status_code == 'CLIENT_REVIEW' %}bg-teal-500
-                            {% elif status_code == 'FINAL_INTERVIEW' %}bg-pink-500
-                            {% elif status_code == 'OFFER' %}bg-indigo-500
-                            {% elif status_code == 'HIRED' %}bg-emerald-500
-                            {% else %}bg-slate-400{% endif %}">
+                <div class="p-3 border-b border-slate-200/60 bg-white/50 rounded-t-xl backdrop-blur-sm sticky top-0 z-10">
+                    <div class="flex justify-between items-center mb-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full 
+                                {% if status_code == 'APPLIED' %}bg-slate-400
+                                {% elif status_code == 'INTERVIEW' %}bg-purple-500
+                                {% elif status_code == 'CLIENT_REVIEW' %}bg-blue-500
+                                {% elif status_code == 'FINAL_INTERVIEW' %}bg-orange-500
+                                {% elif status_code == 'OFFER' %}bg-indigo-500
+                                {% elif status_code == 'HIRED' %}bg-emerald-500
+                                {% elif status_code == 'REJECTED' %}bg-red-500
+                                {% else %}bg-slate-400{% endif %}">
+                            </span>
+                            <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider">
+                                {% if status_code == 'APPLIED' %}Applied
+                                {% elif status_code == 'INTERVIEW' %}Interview
+                                {% elif status_code == 'CLIENT_REVIEW' %}Client Review
+                                {% elif status_code == 'FINAL_INTERVIEW' %}Final Interview
+                                {% elif status_code == 'OFFER' %}Offer
+                                {% elif status_code == 'HIRED' %}Hired
+                                {% elif status_code == 'REJECTED' %}Rejected
+                                {% else %}{{ status_code }}{% endif %}
+                            </h3>
+                        </div>
+                        <span class="bg-white px-2 py-0.5 rounded text-xs font-bold text-slate-400 border border-slate-100 shadow-sm">
+                            {{ apps_list|length }}
                         </span>
-                        <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide">
-                            {{ status_code|lower|capfirst|cut:"_" }}
-                        </h3>
                     </div>
-                    <span class="bg-white px-2 py-0.5 rounded text-xs font-bold text-slate-400 border border-slate-100 shadow-sm">
-                        {{ apps_list|length }}
-                    </span>
+
+                    <p class="text-[10px] text-slate-400 font-medium leading-tight pl-5">
+                        {% if status_code == 'APPLIED' %}
+                            New applicants & exam passers.
+                        {% elif status_code == 'INTERVIEW' %}
+                            Drag here to <span class="text-purple-600 font-bold">Schedule Interview</span>.
+                        {% elif status_code == 'CLIENT_REVIEW' %}
+                            Visible to Client. Needs approval.
+                        {% elif status_code == 'FINAL_INTERVIEW' %}
+                            Client requested final meeting.
+                        {% elif status_code == 'OFFER' %}
+                            Mark as Offer Sent.
+                        {% elif status_code == 'HIRED' %}
+                            Offer accepted. <span class="text-emerald-600 font-bold">Success!</span>
+                        {% elif status_code == 'REJECTED' %}
+                            Mark as not selected.
+                        {% endif %}
+                    </p>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"
@@ -67,31 +94,13 @@
                                 <i class="bi bi-three-dots-vertical"></i>
                             </button>
                             
-                            <div x-show="open" 
-                                 @click.outside="open = false"
-                                 style="display: none;"
+                            <div x-show="open" @click.outside="open = false" style="display: none;"
                                  class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-slate-100 py-1 text-sm z-30">
-                                
-                                <div class="px-4 py-2 text-xs font-semibold text-slate-400 uppercase border-b border-slate-50">
-                                    Actions
-                                </div>
-
-                                <a href="{% url 'web_test:schedule_interview' app.id %}" class="block px-4 py-2 hover:bg-amber-50 text-slate-700 hover:text-amber-700">
-                                    <i class="bi bi-calendar-event mr-2"></i> Schedule Interview
-                                </a>
-
-                                <a href="{% url 'web_test:create_offer' app.id %}" class="block px-4 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700">
-                                    <i class="bi bi-gift mr-2"></i> Generate Offer
-                                </a>
-
-                                <div class="border-t border-slate-50 my-1"></div>
-
-                                <a href="{% url 'web_test:quick_move' app.id 'SCREENING' %}" class="block px-4 py-2 hover:bg-slate-50 text-slate-700">Move to Screening</a>
-                                <a href="{% url 'web_test:quick_move' app.id 'CLIENT_REVIEW' %}" class="block px-4 py-2 hover:bg-slate-50 text-slate-700">Move to Client</a>
-                                <a href="{% url 'web_test:quick_move' app.id 'HIRED' %}" class="block px-4 py-2 hover:bg-green-50 text-green-700">Mark Hired</a>
-                                
-                                <div class="border-t border-slate-50 my-1"></div>
-                                <a href="{% url 'web_test:quick_move' app.id 'REJECTED' %}" class="block px-4 py-2 hover:bg-red-50 text-red-600">Reject Candidate</a>
+                                <a href="{% url 'web_test:application_detail' app.id %}" class="block px-4 py-2 hover:bg-slate-50 text-slate-700">View Details</a>
+                                <a href="{% url 'web_test:schedule_interview' app.id %}" class="block px-4 py-2 hover:bg-purple-50 text-purple-700">Schedule Interview</a>
+                                <a href="{% url 'web_test:create_offer' app.id %}" class="block px-4 py-2 hover:bg-indigo-50 text-indigo-700">Create Offer</a>
+                                <div class="border-t border-slate-100 my-1"></div>
+                                <a href="{% url 'web_test:reject_application' app.id %}" class="block px-4 py-2 hover:bg-red-50 text-red-600">Reject</a>
                             </div>
                         </div>
 
@@ -114,21 +123,18 @@
                             </div>
                             
                             {% if app.assigned_reviewer %}
-                            <div title="Reviewer: {{ app.assigned_reviewer.full_name }}" class="text-xs text-indigo-600 font-bold flex items-center gap-1">
+                            <div title="Reviewer: {{ app.assigned_reviewer.full_name }}" class="text-xs text-purple-600 font-bold flex items-center gap-1 bg-purple-50 px-2 py-0.5 rounded">
                                 <i class="bi bi-person-check-fill"></i> {{ app.assigned_reviewer.full_name|first }}
                             </div>
                             {% endif %}
-                            
-                            <a href="{% url 'web_test:application_detail' app.id %}" class="text-slate-400 hover:text-indigo-600 text-xs font-medium">
-                                View <i class="bi bi-arrow-right"></i>
-                            </a>
                         </div>
                     </div>
                     {% endfor %}
 
                     {% if not apps_list %}
-                    <div class="h-20 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 text-xs italic pointer-events-none">
-                        Drop items here
+                    <div class="h-24 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400 text-xs italic pointer-events-none gap-2">
+                        <i class="bi bi-box-arrow-in-down text-lg opacity-50"></i>
+                        <span>Drop Candidate</span>
                     </div>
                     {% endif %}
                 </div>
@@ -157,20 +163,14 @@
         
         draggedElement.classList.remove('opacity-50');
 
-        // --- INTERCEPT "INTERVIEW" DROP ---
+        // --- SPECIAL ACTION: DROPPING INTO INTERVIEW ---
         if (newStatus === 'INTERVIEW') {
-            // Redirect to the scheduling page immediately
-            window.location.href = "/candidate/" + appId + "/schedule/";
+            // Redirect to schedule page instead of just moving
+            window.location.href = "{% url 'web_test:kanban_board' %}".replace('kanban/', 'candidate/') + appId + "/schedule/";
             return;
         }
-        // ----------------------------------
 
-        // Visual update (for non-interview moves)
-        ev.currentTarget.appendChild(draggedElement);
-        const placeholder = ev.currentTarget.querySelector('.border-dashed');
-        if(placeholder) placeholder.style.display = 'none';
-
-        // AJAX for Standard Moves
+        // --- STANDARD MOVE API ---
         fetch("{% url 'web_test:update_status_api' %}", {
             method: "POST",
             headers: {
@@ -184,14 +184,17 @@
         })
         .then(response => response.json())
         .then(data => {
-            if(!data.success) {
-                alert("Error updating status!");
-                location.reload(); 
+            if(data.success) {
+                ev.currentTarget.appendChild(draggedElement);
+                const placeholder = ev.currentTarget.querySelector('.border-dashed');
+                if(placeholder) placeholder.style.display = 'none';
+            } else {
+                alert("Error moving candidate: " + data.error);
+                location.reload();
             }
         });
     }
 
-    // Restore opacity if drag ends without drop
     document.addEventListener("dragend", function(event) {
         event.target.classList.remove("opacity-50");
     });
@@ -202,8 +205,6 @@
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    
-    /* Hide Alpine until loaded */
     [x-cloak] { display: none !important; }
 </style>
 {% endblock %}

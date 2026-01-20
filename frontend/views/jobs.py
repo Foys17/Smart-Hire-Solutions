@@ -4,11 +4,13 @@ from django.contrib import messages
 from jobs.models import Job
 from candidates.models import Application
 from jobs.utils import run_ai_pipeline
-from frontend.forms import JobForm
+from frontend.forms import JobForm,InterviewInviteForm
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 from users.models import Notification 
 from django.urls import reverse
+from django.core.mail import send_mail  
+from django.conf import settings
 
 def job_list(request):
     query = request.GET.get('q', '')
@@ -216,3 +218,87 @@ def hr_reject_request(request, job_id):
 
     messages.info(request, "Job request rejected and removed.")
     return redirect('web_test:hr_pending_requests')
+
+
+@login_required
+def hr_schedule_interview(request):
+    """
+    Handles bulk interview scheduling.
+    HR selects candidates -> Assigns Reviewer -> System notifies everyone.
+    """
+    if request.user.role not in ['HR', 'Admin']:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+
+    if request.method == 'POST':
+        form = InterviewInviteForm(request.POST)
+        if form.is_valid():
+            # 1. Parse Data
+            app_ids = form.cleaned_data['application_ids'].split(',')
+            reviewer = form.cleaned_data['reviewer']
+            date = form.cleaned_data['date']
+            time = form.cleaned_data['time']
+            location = form.cleaned_data['location']
+            message = form.cleaned_data['message']
+
+            # 2. Get Applications
+            applications = Application.objects.filter(id__in=app_ids)
+            count = applications.count()
+
+            # 3. Bulk Update & Notifications
+            for app in applications:
+                # Update Status & Reviewer
+                app.status = 'INTERVIEW'
+                app.assigned_reviewer = reviewer
+                app.interview_date = f"{date} {time}" # Storing loosely for display
+                app.save()
+
+                # A. Notify Candidate (Dashboard)
+                Notification.objects.create(
+                    user=app.candidate,
+                    message=f"Interview Scheduled! Date: {date} at {time}. Check details.",
+                    link=reverse('web_test:application_detail', args=[app.id])
+                )
+
+                # B. Notify Candidate (Email)
+                # Note: Configure EMAIL_HOST in settings.py for this to work
+                try:
+                    send_mail(
+                        subject=f"Interview Invitation - {app.job.title}",
+                        message=f"Hello {app.candidate.full_name},\n\n"
+                                f"You have been selected for an interview.\n"
+                                f"Date: {date}\nTime: {time}\nLink/Location: {location}\n\n"
+                                f"Message: {message}\n\nGood luck!",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[app.candidate.email],
+                        fail_silently=True
+                    )
+                except Exception:
+                    pass # Don't crash if email fails (local dev)
+
+            # 4. Notify Reviewer (One summary notification)
+            Notification.objects.create(
+                user=reviewer,
+                message=f"New Assignment: You have {count} new candidates to interview on {date}.",
+                link=reverse('web_test:reviewer_dashboard')
+            )
+
+            messages.success(request, f"Successfully scheduled interviews for {count} candidates.")
+            return redirect('web_test:kanban_board') # Or wherever you want to land
+    else:
+        # GET request: Usually comes from the Ranking/Kanban page with IDs in query string
+        ids = request.GET.get('ids', '')
+        form = InterviewInviteForm(initial={'application_ids': ids})
+        
+        # Preview the candidates
+        id_list = ids.split(',') if ids else []
+        apps = Application.objects.filter(id__in=id_list)
+        
+        # If just one app, we can be smart and show that candidate's name in title
+        single_app = apps.first() if len(apps) == 1 else None
+
+    return render(request, 'hr/schedule_interview.html', {
+        'form': form,
+        'apps': apps,
+        'app': single_app # For the template title "Candidate: X"
+    })

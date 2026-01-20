@@ -1,101 +1,44 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8">
-    
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-900">Interviewer Portal</h1>
-        <p class="text-slate-500 mt-1">Welcome, {{ request.user.full_name }}. You have <strong class="text-indigo-600">{{ pending.count }}</strong> interviews pending.</p>
-    </div>
-
-    <div class="mb-12">
-        <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <i class="bi bi-calendar-event"></i> Upcoming Interviews
-        </h2>
+<div class="min-h-screen bg-slate-50 py-10 px-4">
+    <div class="max-w-5xl mx-auto space-y-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for app in pending %}
-            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
-                
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="font-bold text-lg text-slate-900">{{ app.candidate.full_name }}</h3>
-                        <p class="text-sm text-slate-500">{{ app.job.title }}</p>
-                    </div>
-                    <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs font-bold">
-                        {{ app.match_score }}% Match
-                    </span>
-                </div>
-
-                <div class="flex gap-2 mb-6">
-                    {% if app.cv_file %}
-                    <a href="{{ app.cv_file.url }}" target="_blank" class="text-xs font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1">
-                        <i class="bi bi-file-earmark-pdf"></i> Resume
-                    </a>
-                    {% endif %}
-                    <a href="#" class="text-xs font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1">
-                        <i class="bi bi-linkedin"></i> LinkedIn
-                    </a>
-                </div>
-
-                <a href="{% url 'web_test:submit_review' app.id %}" class="block w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-center rounded-lg transition-colors">
-                    Start Interview & Score
-                </a>
+        <div class="flex justify-between items-center border-b border-slate-200 pb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">Reviewer Portal</h1>
+                <p class="text-slate-500">Select a job to view candidates and conduct interviews.</p>
             </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            {% for job in my_jobs %}
+            <a href="{% url 'web_test:reviewer_job_detail' job.id %}" class="block group">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-300 transition-all duration-200 h-full flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xl font-bold text-slate-800 group-hover:text-indigo-600 transition">{{ job.title }}</h3>
+                            <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">
+                                {{ job.target_candidates_count }} Openings
+                            </span>
+                        </div>
+                        <p class="text-slate-500 text-sm mb-4">{{ job.client.company_name}}</p>
+                    </div>
+                    
+                    <div class="flex items-center text-indigo-600 font-semibold text-sm mt-4">
+                        Enter Interview Room <i class="bi bi-arrow-right ml-2 group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+            </a>
             {% empty %}
-            <div class="col-span-full text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-                <p class="text-slate-500">No pending interviews assigned to you.</p>
+            <div class="col-span-2 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
+                <div class="text-slate-400 text-5xl mb-4"><i class="bi bi-inbox"></i></div>
+                <h3 class="text-lg font-semibold text-slate-600">No active interview assignments.</h3>
+                <p class="text-slate-400">Wait for HR to schedule interviews for you.</p>
             </div>
             {% endfor %}
         </div>
-    </div>
 
-    <div>
-        <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <i class="bi bi-clock-history"></i> Completed Reviews
-        </h2>
-        
-        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <table class="w-full text-sm text-left">
-                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                    <tr>
-                        <th class="px-6 py-4">Candidate</th>
-                        <th class="px-6 py-4">Role</th>
-                        <th class="px-6 py-4">Avg Score</th>
-                        <th class="px-6 py-4">Date</th>
-                        <th class="px-6 py-4">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for score in completed %}
-                    <tr class="hover:bg-slate-50/50">
-                        <td class="px-6 py-4 font-medium text-slate-900">{{ score.application.candidate.full_name }}</td>
-                        <td class="px-6 py-4 text-slate-600">{{ score.application.job.title }}</td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold 
-                                {% if score.average_score >= 7 %}bg-green-100 text-green-700{% else %}bg-amber-100 text-amber-700{% endif %}">
-                                {{ score.average_score }} / 10
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-slate-500">{{ score.created_at|date:"M d, Y" }}</td>
-                        <td class="px-6 py-4">
-                            {% if score.average_score >= 7 %}
-                                <span class="text-green-600 font-bold text-xs">Promoted</span>
-                            {% else %}
-                                <span class="text-slate-400 font-medium text-xs">Reviewing</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-slate-500">No history available yet.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </div>
-
 </div>
 {% endblock %}

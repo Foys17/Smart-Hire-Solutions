@@ -7,76 +7,133 @@
 {% if is_dashboard %}
 
     {# ================================================================= #}
-    {# CASE 1: CANDIDATE DASHBOARD                                       #}
+    {# CASE 1: CANDIDATE DASHBOARD (UPDATED UI)                          #}
     {# ================================================================= #}
     {% if request.user.role == 'Candidate' %}
     
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="mb-8">
-            {# --- DYNAMIC TITLE BASED ON VIEW FILTER --- #}
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        <div class="mb-10">
             <h1 class="text-3xl font-bold text-slate-900">
-                {% if view_type == 'offers' %}
-                    My Offers
-                {% else %}
-                    My Applications
-                {% endif %}
+                {% if view_type == 'offers' %}My Job Offers{% else %}My Applications{% endif %}
             </h1>
-            <p class="text-slate-500">
+            <p class="text-slate-500 mt-2">
                 {% if view_type == 'offers' %}
-                    View and manage your received job offers.
+                    Review and respond to your pending job offers.
                 {% else %}
-                    Welcome back, {{ request.user.full_name }}. Track your job opportunities here.
+                    Track your applications and view status updates.
                 {% endif %}
             </p>
         </div>
 
         {% if my_applications %}
-            <div class="grid gap-6">
+            <div class="grid gap-5">
                 {% for app in my_applications %}
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    
-                    <div class="flex items-start gap-4">
-                        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl font-bold border border-indigo-100">
-                            {{ app.job.title|first }}
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900">{{ app.job.title }}</h3>
-                            <p class="text-sm text-slate-500">Applied on {{ app.created_at|date:"M d, Y" }}</p>
-                            
-                            <div class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
-                                {% if app.status == 'OFFER' %}bg-indigo-100 text-indigo-700
-                                {% elif app.status == 'HIRED' %}bg-green-100 text-green-700
-                                {% elif app.status == 'REJECTED' %}bg-red-50 text-red-600
-                                {% else %}bg-slate-100 text-slate-600{% endif %}">
-                                {{ app.get_status_display }}
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 group">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        
+                        <div class="flex items-start gap-4 flex-1 w-full">
+                            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl flex items-center justify-center text-xl font-bold shadow-sm shrink-0">
+                                {{ app.job.title|first }}
                             </div>
+                            <div class="w-full">
+                                <h3 class="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition">{{ app.job.title }}</h3>
+                                <p class="text-sm text-slate-500">{{ app.job.client.company_name|default:"Smart Hire Solutions" }} • Applied {{ app.created_at|date:"M d, Y" }}</p>
+                                
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    {% if app.status == 'OFFER' %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 animate-pulse">
+                                            <i class="bi bi-gift-fill"></i> Offer Received
+                                        </span>
+                                    {% elif app.status == 'HIRED' %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                                            <i class="bi bi-check-circle-fill"></i> Hired
+                                        </span>
+                                    {% elif app.status == 'REJECTED' %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
+                                            <i class="bi bi-x-circle"></i> Not Selected
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                            {{ app.get_status_display }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                {% if app.interview_date %}
+                                    {% if app.status == 'INTERVIEW' or app.status == 'FINAL_INTERVIEW' %}
+                                    <div class="mt-4 bg-orange-50 border border-orange-100 rounded-xl p-4 w-full max-w-md">
+                                        <div class="flex items-center gap-2 text-orange-800 font-bold text-sm mb-3 border-b border-orange-200/60 pb-2">
+                                            <i class="bi bi-camera-video-fill"></i> Interview Invitation
+                                        </div>
+                                        
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex gap-3">
+                                                <div class="w-5 text-orange-400"><i class="bi bi-calendar3"></i></div>
+                                                <div class="text-slate-700 font-medium">
+                                                    {{ app.interview_date|date:"l, F j, Y" }}
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex gap-3">
+                                                <div class="w-5 text-orange-400"><i class="bi bi-clock"></i></div>
+                                                <div class="text-slate-700 font-medium">
+                                                    {{ app.interview_date|time:"g:i A" }}
+                                                </div>
+                                            </div>
+
+                                            {% if app.interview_location %}
+                                            <div class="flex gap-3">
+                                                <div class="w-5 text-orange-400"><i class="bi bi-geo-alt-fill"></i></div>
+                                                <div class="text-slate-700">
+                                                    {% if "http" in app.interview_location %}
+                                                        <a href="{{ app.interview_location }}" target="_blank" class="text-indigo-600 hover:underline font-bold break-all">
+                                                            Join Meeting Link <i class="bi bi-box-arrow-up-right text-xs"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        {{ app.interview_location }}
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endif %}
+
+                                            {% if app.interview_note %}
+                                            <div class="flex gap-3 pt-1">
+                                                <div class="w-5 text-orange-400"><i class="bi bi-info-circle"></i></div>
+                                                <div class="text-slate-600 italic text-xs leading-relaxed">
+                                                    "{{ app.interview_note }}"
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+                                </div>
                         </div>
-                    </div>
 
-                    <div class="flex items-center gap-3 w-full md:w-auto">
-                        
-                        {# --- OFFER BUTTON (Only visible if status is OFFER) --- #}
-                        {% if app.status == 'OFFER' %}
-                            <a href="{% url 'web_test:view_offer' app.id %}" class="flex-1 md:flex-none px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 animate-pulse">
-                                <i class="bi bi-gift-fill"></i> View Offer
+                        <div class="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+                            {% if app.status == 'OFFER' %}
+                                <a href="{% url 'web_test:view_offer' app.id %}" class="flex-1 md:flex-none px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                                    <i class="bi bi-envelope-open-fill"></i> View Offer Letter
+                                </a>
+                            {% endif %}
+                            
+                            <a href="{% url 'web_test:candidate_job_status' app.job.id %}" class="flex-1 md:flex-none px-5 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-50 transition-colors text-center">
+                                View Status
                             </a>
-                        {% endif %}
-                        
-                        <a href="{% url 'web_test:candidate_job_status' app.job.id %}" class="flex-1 md:flex-none px-5 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-bold rounded-xl hover:bg-slate-50 transition-colors text-center">
-                            Track Status
-                        </a>
-                    </div>
+                        </div>
 
+                    </div>
                 </div>
                 {% endfor %}
             </div>
         {% else %}
-            {# --- DYNAMIC EMPTY STATE --- #}
-            <div class="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                    <i class="bi bi-briefcase text-4xl text-slate-300"></i>
+            <div class="text-center py-24 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-slate-300">
+                    <i class="bi bi-inbox text-3xl"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-900 mb-2">
+                <h3 class="text-lg font-bold text-slate-900">
                     {% if view_type == 'offers' %}No offers yet{% else %}No applications yet{% endif %}
                 </h3>
                 <p class="text-slate-500 mb-6">
@@ -86,8 +143,8 @@
                         You haven't applied to any jobs yet. Start your journey today!
                     {% endif %}
                 </p>
-                <a href="{% url 'web_test:job_list' %}" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-all">
-                    Browse Jobs
+                <a href="{% url 'web_test:job_list' %}" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
+                    Browse Open Jobs
                 </a>
             </div>
         {% endif %}
@@ -151,7 +208,7 @@
             </div>
         </div>
 
-        {# --- ROW 2: ADVANCED ANALYTICS (NEW) --- #}
+        {# --- ROW 2: ADVANCED ANALYTICS --- #}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
                 <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl">

@@ -5,11 +5,10 @@ from jobs.models import Job
 # --- UPDATED KANBAN STAGES ---
 STATUS_CHOICES = (
     ('PENDING_EXAM', 'Pending Exam'),
-    ('APPLIED', 'New Applied'),
-    ('SCREENING', 'Screening'),
+    ('APPLIED', 'Applied'),           # <--- Screening Passed / No Exam
     ('INTERVIEW', 'Internal Interview'),
-    ('CLIENT_REVIEW', 'Shared with Client'),
-    ('FINAL_INTERVIEW', 'Final Interview'),
+    ('CLIENT_REVIEW', 'Client Review'),     # <--- Shortlisted for Client Decision
+    ('FINAL_INTERVIEW', 'Final Interview'), # <--- If Client wants to interview
     ('OFFER', 'Offer Sent'),
     ('HIRED', 'Hired'),
     ('REJECTED', 'Rejected'),
@@ -25,7 +24,6 @@ class Application(models.Model):
     extracted_data = models.JSONField(default=dict, blank=True)
     
     # AI Fields
-    # Changed to null=True so we can easily filter non-embedded CVs
     cv_embedding = models.JSONField(blank=True, null=True) 
     match_score = models.FloatField(default=0.0)
     
@@ -33,12 +31,16 @@ class Application(models.Model):
     has_reference = models.BooleanField(default=False)
     reference_name = models.CharField(max_length=255, blank=True, null=True)
     interview_date = models.DateTimeField(null=True, blank=True)
+    interview_location = models.CharField(max_length=255, null=True, blank=True)
+    interview_note = models.TextField(null=True, blank=True)
+    offer_salary = models.CharField(max_length=100, null=True, blank=True, help_text="e.g. $5,000/month")
+    offer_start_date = models.DateField(null=True, blank=True)
+    offer_message = models.TextField(null=True, blank=True, help_text="Personal note or official terms")
     
     # Pipeline Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='APPLIED')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
+    
+    # Reviewer Assignment
     assigned_reviewer = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
@@ -46,6 +48,9 @@ class Application(models.Model):
         blank=True, 
         related_name='assigned_interviews'
     )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('job', 'candidate')
@@ -73,5 +78,3 @@ class Offer(models.Model):
 
     def __str__(self):
         return f"Offer for {self.application.candidate.full_name} - {self.status}"
-    
-    

@@ -1,6 +1,6 @@
 from django import forms
 from jobs.models import Job, Question
-from candidates.models import Application,Offer
+from candidates.models import Application, Offer
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from reviewer.models import InterviewScore
@@ -101,8 +101,6 @@ class UserRegistrationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        # Role is saved from the form data automatically if included in fields, 
-        # but we explicitly save user to ensure commit logic holds
         if commit:
             user.save()
         return user
@@ -130,8 +128,8 @@ class HRUploadCVForm(forms.Form):
 class InterviewInviteForm(forms.Form):
     application_ids = forms.CharField(widget=forms.HiddenInput())
     reviewer = forms.ModelChoiceField(
-        queryset=User.objects.filter(role='Reviewer'), # Now this will find your user!
-        widget=forms.Select(attrs={'class': 'w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all'}),
+        queryset=User.objects.filter(role='Reviewer'), 
+        widget=forms.Select(attrs={'class': SELECT_STYLE}),
         label="Assign Reviewer",
         required=True,
         empty_label="Select a Team Member"
@@ -196,24 +194,26 @@ class CVBuilderForm(forms.Form):
     )
 
 
-# --- CLIENT REQUEST FORM (UPDATED WITH VALIDATION) ---
+# --- UPDATED CLIENT REQUEST FORM ---
 class ClientJobRequestForm(forms.ModelForm):
     class Meta:
         model = Job
         fields = [
             'title', 'description_text', 'description_file', 
             'target_candidates_count', 'client_does_final_interview',
+            'monthly_salary', 'joining_date',  # <--- ADDED NEW FIELDS
             'has_primary_exam', 'exam_passing_score'
         ]
         widgets = {
-            'title': forms.TextInput(attrs={'class': INPUT_STYLE}),
-            'description_text': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4}),
+            'title': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. Senior Product Designer'}),
+            'description_text': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'Describe the role, responsibilities, and requirements...'}),
             'description_file': forms.FileInput(attrs={'class': FILE_INPUT_STYLE}),
-            'target_candidates_count': forms.NumberInput(attrs={'class': INPUT_STYLE}),
+            'target_candidates_count': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'value': 1}),
+            'monthly_salary': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. 50000'}), # <--- Widget
+            'joining_date': forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}), # <--- Widget
             'exam_passing_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': '60'}),
         }
 
-    # --- ADDED VALIDATION LOGIC ---
     def clean(self):
         cleaned_data = super().clean()
         desc_text = cleaned_data.get('description_text')
@@ -228,9 +228,7 @@ class ClientJobRequestForm(forms.ModelForm):
         return cleaned_data
 
 
-# --- QUESTION ADDITION FORM ---
 class QuestionForm(forms.ModelForm):
-    # We manually create fields for the 4 options to make it easy for the client
     option_1 = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Option A'}))
     option_2 = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Option B'}))
     option_3 = forms.CharField(widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Option C'}))
@@ -278,3 +276,50 @@ class OfferForm(forms.ModelForm):
             'expiration_date': forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
             'benefits': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': '- Health Insurance\n- Remote Work\n- Laptop provided'}),
         }
+
+class OfferCreationForm(forms.Form):
+    salary = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. $4,500 per month'}),
+        label="Offered Salary / Rate"
+    )
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
+        label="Proposed Start Date"
+    )
+    message = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': INPUT_STYLE, 
+            'rows': 5, 
+            'placeholder': 'Congratulations! We are pleased to offer you the position...'
+        }),
+        label="Offer Letter Content / Personal Note"
+    )
+
+
+class ClientScheduleForm(forms.Form):
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
+        label="Interview Date"
+    )
+    time = forms.TimeField(
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': INPUT_STYLE}),
+        label="Start Time"
+    )
+    location = forms.CharField(
+        max_length=255,
+        widget=forms.TextInput(attrs={
+            'class': INPUT_STYLE, 
+            'placeholder': 'e.g. Google Meet Link or Office Address'
+        }),
+        label="Meeting Link / Location"
+    )
+    notes = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': INPUT_STYLE, 
+            'rows': 3, 
+            'placeholder': 'Instructions for the candidate (e.g. Bring ID, Prepare Portfolio)...'
+        }),
+        required=False,
+        label="Notes for Candidate"
+    )

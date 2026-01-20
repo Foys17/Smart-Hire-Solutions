@@ -12,7 +12,10 @@ class JobsConfig(AppConfig):
     jina_model = None
 
     def ready(self):
-        self.load_models()
+    # Only auto-load when running the server (keeps other commands fast)
+        if os.environ.get('RUN_MAIN') == 'true':
+            self.load_models()
+            
 
     def load_models(self):
         """

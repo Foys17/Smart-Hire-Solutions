@@ -3,7 +3,7 @@
 {% block content %}
 <div class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
     
-    <div class="max-w-3xl mx-auto">
+    <div class="max-w-4xl mx-auto"> {# Increased width slightly for 4 steps #}
         
         <div class="mb-8">
             <a href="{% url 'web_test:job_list' %}" class="inline-flex items-center px-5 py-2.5 bg-white text-slate-600 text-sm font-semibold rounded-xl shadow-sm border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 hover:shadow-md transition-all duration-200 group">
@@ -12,7 +12,7 @@
             </a>
         </div>
 
-        {# --- NEW: OFFER NOTIFICATION SECTION --- #}
+        {# --- OFFER NOTIFICATION SECTION --- #}
         {% if application.status == 'OFFER' %}
         <div class="mb-8 p-6 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
             <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
@@ -34,56 +34,128 @@
             </a>
         </div>
         {% endif %}
-        {# --------------------------------------- #}
+
+        {# --- INTERVIEW SCHEDULE SECTION --- #}
+        {% if application.interview_date %}
+            {% if application.status == 'INTERVIEW' or application.status == 'FINAL_INTERVIEW' %}
+            <div class="mb-8 p-6 bg-orange-50 border border-orange-100 rounded-2xl shadow-sm relative overflow-hidden">
+                <div class="flex items-start gap-4 relative z-10">
+                    <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center text-2xl shadow-sm shrink-0">
+                        <i class="bi bi-calendar-check-fill"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-orange-800">Interview Invitation</h3>
+                        <p class="text-orange-700/80 text-sm mb-4">You have been invited to an interview. Please review the details below.</p>
+                        
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-orange-200/50">
+                                <i class="bi bi-calendar3 text-orange-500"></i>
+                                <span class="font-semibold text-slate-700">{{ application.interview_date|date:"l, F j, Y" }}</span>
+                            </div>
+                            <div class="flex items-center gap-3 bg-white p-3 rounded-lg border border-orange-200/50">
+                                <i class="bi bi-clock-fill text-orange-500"></i>
+                                <span class="font-semibold text-slate-700">{{ application.interview_date|time:"g:i A" }}</span>
+                            </div>
+                        </div>
+
+                        {% if application.interview_location %}
+                        <div class="mt-4 flex items-start gap-3 bg-white p-3 rounded-lg border border-orange-200/50">
+                            <i class="bi bi-geo-alt-fill text-orange-500 mt-0.5"></i>
+                            <div>
+                                <span class="text-xs font-bold text-slate-400 uppercase block mb-0.5">Location / Link</span>
+                                <div class="text-slate-700 break-all font-medium">
+                                    {% if "http" in application.interview_location %}
+                                        <a href="{{ application.interview_location }}" target="_blank" class="text-indigo-600 hover:underline inline-flex items-center gap-1">
+                                            Join Meeting <i class="bi bi-box-arrow-up-right text-xs"></i>
+                                        </a>
+                                    {% else %}
+                                        {{ application.interview_location }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if application.interview_note %}
+                        <div class="mt-4 bg-orange-100/50 p-3 rounded-lg border border-orange-200/50">
+                            <p class="text-xs font-bold text-orange-800/60 uppercase mb-1">Note from Recruiter</p>
+                            <p class="text-slate-700 text-sm italic">"{{ application.interview_note }}"</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
 
         <div class="bg-white rounded-[2rem] shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden relative">
             
             <div class="h-2 w-full bg-gradient-to-r 
                 {% if application.status == 'REJECTED' %}from-red-500 via-orange-500 to-red-500
-                {% elif application.status == 'SHORTLISTED' %}from-emerald-500 via-teal-500 to-emerald-500
-                {% elif application.status == 'OFFER' %}from-indigo-500 via-purple-500 to-indigo-500
-                {% elif application.status == 'HIRED' %}from-green-500 via-emerald-500 to-green-500
-                {% else %}from-blue-500 via-indigo-500 to-blue-500{% endif %}">
+                {% elif application.status == 'OFFER' or application.status == 'HIRED' %}from-indigo-500 via-purple-500 to-indigo-500
+                {% elif application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' %}from-blue-500 via-indigo-500 to-blue-500
+                {% else %}from-blue-400 via-blue-500 to-blue-400{% endif %}">
             </div>
 
             <div class="p-8 md:p-12">
                 
-                <div class="text-center mb-10">
+                <div class="text-center mb-12">
                     <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">{{ job.title }}</h1>
                     <p class="text-slate-500">Application ID: <span class="font-mono font-bold text-slate-700">#{{ application.id }}</span></p>
                 </div>
 
                 {% if application.status != 'REJECTED' %}
                 
-                <div class="relative flex justify-between items-center mb-12 max-w-sm mx-auto">
+                <div class="relative flex justify-between items-center mb-14 max-w-lg mx-auto">
                     <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-100 -z-10 rounded-full"></div>
                     
                     <div class="absolute top-1/2 left-0 h-1 bg-indigo-500 -z-10 rounded-full transition-all duration-1000"
-                        style="width: {% if application.status == 'APPLIED' %}0%{% elif application.status == 'OFFER' or application.status == 'HIRED' %}100%{% elif application.status == 'SHORTLISTED' %}50%{% endif %};">
+                        style="width: 
+                        {% if application.status == 'APPLIED' or application.status == 'PENDING_EXAM' %}0%
+                        {% elif application.status == 'SHORTLISTED' or application.status == 'INTERVIEW' %}33%
+                        {% elif application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' %}66%
+                        {% elif application.status == 'OFFER' or application.status == 'HIRED' %}100%
+                        {% endif %};">
                     </div>
 
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
-                            {% if application.status != 'PENDING_EXAM' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
-                            <i class="bi bi-check-lg text-lg"></i>
+                    <div class="flex flex-col items-center gap-2 relative">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10 bg-indigo-600 text-white">
+                            <i class="bi bi-check-lg"></i>
                         </div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Applied</span>
+                        <span class="absolute -bottom-8 text-[10px] font-bold uppercase tracking-wider text-indigo-600">Applied</span>
                     </div>
 
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
-                            {% if application.status == 'SHORTLISTED' or application.status == 'INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
-                            <i class="bi bi-people-fill text-lg"></i>
+                    <div class="flex flex-col items-center gap-2 relative">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
+                            {% if application.status != 'APPLIED' and application.status != 'PENDING_EXAM' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
+                            <i class="bi bi-people-fill"></i>
                         </div>
-                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status == 'SHORTLISTED' or application.status == 'INTERVIEW' %}text-indigo-600{% else %}text-slate-400{% endif %}">Screening</span>
+                        <span class="absolute -bottom-8 text-[10px] font-bold uppercase tracking-wider 
+                            {% if application.status != 'APPLIED' and application.status != 'PENDING_EXAM' %}text-indigo-600{% else %}text-slate-400{% endif %}">
+                            Screening
+                        </span>
                     </div>
 
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
+                    <div class="flex flex-col items-center gap-2 relative">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
+                            {% if application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
+                            <i class="bi bi-building-check"></i>
+                        </div>
+                        <span class="absolute -bottom-8 text-[10px] font-bold uppercase tracking-wider w-24 text-center
+                            {% if application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' %}text-indigo-600{% else %}text-slate-400{% endif %}">
+                            Final Review
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col items-center gap-2 relative">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
                             {% if application.status == 'OFFER' or application.status == 'HIRED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
-                            <i class="bi bi-star-fill text-lg"></i>
+                            <i class="bi bi-trophy-fill"></i>
                         </div>
-                        <span class="text-xs font-bold uppercase tracking-wider {% if application.status == 'OFFER' %}text-indigo-600{% else %}text-slate-400{% endif %}">Offer</span>
+                        <span class="absolute -bottom-8 text-[10px] font-bold uppercase tracking-wider 
+                            {% if application.status == 'OFFER' or application.status == 'HIRED' %}text-indigo-600{% else %}text-slate-400{% endif %}">
+                            Offer
+                        </span>
                     </div>
                 </div>
 

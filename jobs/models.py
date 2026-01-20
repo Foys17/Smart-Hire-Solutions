@@ -4,7 +4,7 @@ from clients.models import ClientCompany
 
 class Job(models.Model):
     class Status(models.TextChoices):
-        REQUESTED = 'REQUESTED', 'Requested by Client' # <--- NEW STATUS
+        REQUESTED = 'REQUESTED', 'Requested by Client'
         OPEN = 'OPEN', 'Open'
         CLOSED = 'CLOSED', 'Closed'
         FILLED = 'FILLED', 'Filled'
@@ -18,10 +18,9 @@ class Job(models.Model):
     )
     
     # The Human Client (e.g. "John Doe at Google")
-    # This allows the specific user to log in and see this job.
     client_contact = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, # If user is deleted, keep the job
+        on_delete=models.SET_NULL, 
         related_name='client_jobs',
         null=True, 
         blank=True,
@@ -40,7 +39,6 @@ class Job(models.Model):
     description_text = models.TextField(blank=True, null=True)
     description_file = models.FileField(upload_to='job_descriptions/', blank=True, null=True)
     
-    # Updated max_length to 20 to fit 'REQUESTED' and set default
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.REQUESTED)
 
     # CLIENT REQUEST FIELDS
@@ -49,19 +47,28 @@ class Job(models.Model):
     # Workflow Settings
     client_does_final_interview = models.BooleanField(default=True, help_text="Will the client interview the final shortlist?")
     
+    # --- NEW: JOINING & SALARY DETAILS ---
+    monthly_salary = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Monthly Salary offered to the candidate per person"
+    )
+    joining_date = models.DateField(null=True, blank=True, help_text="Expected Joining Date")
+
     # Exam Settings
     has_primary_exam = models.BooleanField(default=False)
     exam_passing_score = models.IntegerField(default=60, help_text="Score % required to pass")
-    # REMOVED: exam_link = models.URLField(...) 
 
     # FINANCIALS 
     salary_budget = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True,
-        help_text="Annual Salary Budget (for commission calc)"
+        help_text="Annual Salary Budget (Optional/Legacy)"
     )
+    
+    # Dynamic Service Fee %
+    # Default set to 20.00 as requested, but editable per job
     commission_rate = models.DecimalField(
-        max_digits=5, decimal_places=2, default=15.00,
-        help_text="Agency Fee % for this specific job"
+        max_digits=5, decimal_places=2, default=20.00,
+        help_text="Agency Fee % for this specific job (Dynamic)"
     )
 
     # AI DATA
@@ -73,14 +80,24 @@ class Job(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        client_name = self.client.name if self.client else "Internal"
         return f"{self.title} ({self.get_status_display()})"
     
     @property
-    def expected_revenue(self):
-        if self.salary_budget and self.commission_rate:
-            return (self.salary_budget * self.commission_rate) / 100
+    def agency_fee_total(self):
+        """
+        Calculates total fee: (Monthly Salary * Commission Rate %) * Number of Hires
+        """
+        if self.monthly_salary and self.commission_rate and self.target_candidates_count:
+            # Fee per candidate
+            one_candidate_fee = self.monthly_salary * (self.commission_rate / 100)
+            # Total fee for all requested candidates
+            return one_candidate_fee * self.target_candidates_count
         return 0
+
+    @property
+    def expected_revenue(self):
+        # Kept for backward compatibility if templates use it
+        return self.agency_fee_total
 
 # --- NEW EXAM MODELS ---
 

@@ -369,18 +369,25 @@ def kanban_board(request):
     selected_job_id = request.GET.get('job_id')
     applications = Application.objects.select_related('candidate', 'job').all()
     if selected_job_id: applications = applications.filter(job_id=selected_job_id)
+    
+    # --- UPDATED COLUMNS (Removed SCREENING) ---
     columns = {
         'APPLIED': [],
-        'SCREENING': [],
+        'INTERVIEW': [],        # Was missing in your previous dictionary
         'CLIENT_REVIEW': [],
         'FINAL_INTERVIEW': [],
         'OFFER': [],
         'HIRED': [],
         'REJECTED': []
     }
+    
     for app in applications:
-        if app.status in columns: columns[app.status].append(app)
-        else: columns['APPLIED'].append(app)
+        if app.status in columns: 
+            columns[app.status].append(app)
+        else: 
+            # Fallback for any old statuses
+            columns['APPLIED'].append(app)
+            
     jobs = Job.objects.filter(status='OPEN')
     context = {'columns': columns, 'jobs': jobs, 'selected_job_id': int(selected_job_id) if selected_job_id else None}
     return render(request, 'kanban_board.html', context)
@@ -495,58 +502,57 @@ def create_offer(request, application_id):
 
 @login_required
 def view_offer(request, application_id):
-    app = get_object_or_404(Application, pk=application_id)
+    app = get_object_or_404(Application, id=application_id)
     
-    if request.user != app.candidate and request.user.role not in ['HR', 'Admin']:
+    # Security Check
+    if app.candidate != request.user:
         messages.error(request, "Access Denied")
         return redirect('web_test:home')
         
-    try:
-        offer = app.offer_letter
-    except Offer.DoesNotExist:
-        messages.error(request, "No offer details found.")
-        return redirect('web_test:home')
-
-    return render(request, 'candidates/view_offer.html', {'offer': offer, 'app': app})
+    return render(request, 'candidates/view_offer.html', {'application': app})
 
 @login_required
-def respond_offer(request, offer_id, response):
-    offer = get_object_or_404(Offer, pk=offer_id)
-    
-    # Ensure only the candidate can respond
-    if request.user != offer.application.candidate:
-        messages.error(request, "Unauthorized")
+def respond_offer(request, application_id, response):
+    app = get_object_or_404(Application, id=application_id)
+
+    # Security Check: Ensure only the candidate can respond
+    if app.candidate != request.user:
+        messages.error(request, "Unauthorized access.")
         return redirect('web_test:home')
-        
-    # Get HR Contact (Job Poster)
-    hr_contact = offer.application.job.posted_by
 
-    if response == 'accept':
-        offer.status = 'ACCEPTED'
-        offer.application.status = 'HIRED'
-        messages.success(request, "Congratulations! You have accepted the job.")
-        
-        # --- NOTIFY HR ---
-        if hr_contact:
-            Notification.objects.create(
-                user=hr_contact,
-                message=f"OFFER ACCEPTED: {offer.application.candidate.full_name} has joined the team!",
-                link=reverse('web_test:kanban_board')
-            )
+    # Security Check: Ensure status is actually OFFER
+    if app.status != 'OFFER':
+        messages.error(request, "This application does not have a pending offer.")
+        return redirect('web_test:home')
 
-    elif response == 'decline':
-        offer.status = 'DECLINED'
-        offer.application.status = 'REJECTED' 
-        messages.info(request, "You have declined the offer.")
-        
-        # --- NOTIFY HR ---
-        if hr_contact:
+    if response == 'ACCEPT':
+        # 1. Update Status
+        app.status = 'HIRED'
+        app.save()
+
+        # 2. Notify Client
+        if app.job.client_contact:
             Notification.objects.create(
-                user=hr_contact,
-                message=f"Offer Declined: {offer.application.candidate.full_name} has declined the role.",
-                link=reverse('web_test:kanban_board')
+                user=app.job.client_contact,
+                message=f"🎉 Offer ACCEPTED! {app.candidate.full_name} has joined the team for {app.job.title}.",
+                link=reverse('web_test:client_job_view', args=[app.job.id])
             )
         
-    offer.save()
-    offer.application.save()
+        messages.success(request, f"Congratulations! You have successfully accepted the offer for {app.job.title}.")
+
+    elif response == 'DECLINE':
+        # 1. Update Status (You can use 'REJECTED' or a specific 'OFFER_DECLINED' status)
+        app.status = 'REJECTED' 
+        app.save()
+        
+        # 2. Notify Client
+        if app.job.client_contact:
+            Notification.objects.create(
+                user=app.job.client_contact,
+                message=f"Offer Declined. {app.candidate.full_name} has declined the offer for {app.job.title}.",
+                link=reverse('web_test:client_job_view', args=[app.job.id])
+            )
+
+        messages.info(request, "You have declined the job offer.")
+
     return redirect('web_test:home')

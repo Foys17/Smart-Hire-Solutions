@@ -4,71 +4,175 @@ from django.contrib import messages
 from jobs.models import Job,Question
 from candidates.models import Application
 from django.db.models import Count, Q
-from frontend.forms import ClientJobRequestForm,QuestionForm
+from frontend.forms import ClientJobRequestForm,QuestionForm,ClientScheduleForm, OfferCreationForm
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from users.models import Notification
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 @login_required
 def client_dashboard(request):
     if request.user.role != 'Client':
         return redirect('web_test:home')
 
-    # We use 'annotate' to create a custom field 'ready_to_review_count' for each job
-    # This counts ONLY applications with status='CLIENT_REVIEW'
+    # 1. Fetch Jobs with "Ready to Review" counts
     my_jobs = Job.objects.filter(client_contact=request.user).annotate(
         ready_to_review_count=Count('applications', filter=Q(applications__status='CLIENT_REVIEW'))
     ).order_by('-created_at')
 
     active_count = my_jobs.filter(status='OPEN').count()
-    
-    # Total count across all jobs
     candidates_to_review = Application.objects.filter(job__in=my_jobs, status='CLIENT_REVIEW').count()
+
+    # 2. NEW: Fetch Upcoming Final Interviews
+    # We look for candidates in 'FINAL_INTERVIEW' stage with a set date in the future
+    upcoming_interviews = Application.objects.filter(
+        job__client_contact=request.user,
+        status='FINAL_INTERVIEW',
+        interview_date__gte=timezone.now()
+    ).select_related('job', 'candidate').order_by('interview_date')
 
     context = {
         'jobs': my_jobs,
         'active_count': active_count,
-        'review_count': candidates_to_review
+        'review_count': candidates_to_review,
+        'upcoming_interviews': upcoming_interviews # <--- Passed to template
     }
     return render(request, 'client/dashboard.html', context)
 
 @login_required
 def client_job_view(request, job_id):
-    job = get_object_or_404(Job, id=job_id, client_contact=request.user)
-    candidates = job.applications.filter(status='CLIENT_REVIEW')
-    return render(request, 'client/review_candidates.html', {'job': job, 'candidates': candidates})
+    job = get_object_or_404(Job, id=job_id)
+    
+    if request.user != job.client_contact:
+        return redirect('web_test:client_dashboard')
+
+    # --- CHANGED LOGIC: FETCH ALL RELEVANT CANDIDATES ---
+    # Fetch candidates currently in review, OR those already offered/rejected by client
+    # We exclude 'INTERVIEW' or 'SCREENING' because those haven't reached the client yet.
+    candidates = Application.objects.filter(
+        job=job,
+        status__in=['CLIENT_REVIEW', 'OFFER', 'FINAL_INTERVIEW', 'HIRED', 'REJECTED']
+    ).order_by('-match_score')
+    # ----------------------------------------------------
+
+    return render(request, 'client/review_candidates.html', {
+        'job': job, 
+        'candidates': candidates
+    })
 
 
 @login_required
 def client_decision(request, application_id, decision):
     app = get_object_or_404(Application, id=application_id)
     
-    # Security Check
     if app.job.client_contact != request.user:
         messages.error(request, "Unauthorized access.")
         return redirect('web_test:client_dashboard')
 
     if decision == 'approve':
-        # Logic: If client wants to interview, go to FINAL_INTERVIEW.
-        # Otherwise, go straight to OFFER.
-        if app.job.client_does_final_interview:
-            app.status = 'FINAL_INTERVIEW'
-            msg = f"Approved! Please schedule your Final Interview with {app.candidate.full_name}."
-        else:
-            app.status = 'OFFER'
-            msg = f"Approved! HR has been notified to send an Offer to {app.candidate.full_name}."
-            
-        messages.success(request, msg)
+        # Logic: If we are at the end of the process, go to Offer Creation
         
-        # Notify HR (Simple print for now, email later)
-        print(f"EMAIL TO HR: Client accepted {app.candidate.full_name}")
+        # Condition A: Already in Final Interview -> Needs Offer
+        # Condition B: Job DOES NOT require Final Interview -> Needs Offer immediately
+        if app.status == 'FINAL_INTERVIEW' or not app.job.client_does_final_interview:
+            return redirect('web_test:client_create_offer', application_id=app.id)
+
+        # Condition C: Job DOES require Final Interview and we are not there yet
+        elif app.job.client_does_final_interview:
+            return redirect('web_test:client_schedule_interview', application_id=app.id)
 
     elif decision == 'reject':
         app.status = 'REJECTED'
         messages.info(request, f"Marked {app.candidate.full_name} as not a fit.")
+        app.save()
     
-    app.save()
     return redirect('web_test:client_job_view', job_id=app.job.id)
+
+@login_required
+def client_create_offer(request, application_id):
+    app = get_object_or_404(Application, id=application_id)
+    
+    if app.job.client_contact != request.user:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:client_dashboard')
+
+    if request.method == 'POST':
+        form = OfferCreationForm(request.POST)
+        if form.is_valid():
+            # 1. Save Offer Details to Application
+            app.offer_salary = form.cleaned_data['salary']
+            app.offer_start_date = form.cleaned_data['start_date']
+            app.offer_message = form.cleaned_data['message']
+            
+            # 2. Update Status
+            app.status = 'OFFER'
+            app.save()
+
+            # 3. Notification
+            Notification.objects.create(
+                user=app.candidate,
+                message=f"🎉 CONGRATULATIONS! You have received a Job Offer for {app.job.title}!",
+                link=reverse('web_test:view_offer', args=[app.id])
+            )
+
+            messages.success(request, f"Offer sent to {app.candidate.full_name} successfully!")
+            return redirect('web_test:client_job_view', job_id=app.job.id)
+    else:
+        # Pre-fill some data if available
+        initial_data = {
+            'salary': f"${app.job.monthly_salary}",
+            'message': f"Dear {app.candidate.full_name},\n\nWe are impressed with your skills and would like to formally offer you the position of {app.job.title}."
+        }
+        form = OfferCreationForm(initial=initial_data)
+
+    return render(request, 'client/create_offer.html', {'form': form, 'app': app})
+
+
+@login_required
+def client_schedule_interview(request, application_id):
+    app = get_object_or_404(Application, id=application_id)
+    
+    # Security Check
+    if app.job.client_contact != request.user:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:client_dashboard')
+
+    if request.method == 'POST':
+        form = ClientScheduleForm(request.POST)
+        if form.is_valid():
+            date = form.cleaned_data['date']
+            time = form.cleaned_data['time']
+            location = form.cleaned_data['location']
+            notes = form.cleaned_data['notes']
+            
+            dt_string = f"{date} {time}"
+            
+            # --- UPDATED SAVING LOGIC ---
+            app.status = 'FINAL_INTERVIEW'
+            app.interview_date = dt_string
+            app.interview_location = location  # <--- Saving Location
+            app.interview_note = notes         # <--- Saving Notes
+            app.save()
+
+            # 3. Notify Candidate
+            Notification.objects.create(
+                user=app.candidate,
+                message=f"Final Interview Scheduled! {date} at {time}. Check details.",
+                link=reverse('web_test:application_detail', args=[app.id])
+            )
+            
+            # 4. Notify HR (Optional)
+            
+            messages.success(request, f"Final Interview scheduled with {app.candidate.full_name} on {date} at {time}.")
+            return redirect('web_test:client_job_view', job_id=app.job.id)
+    else:
+        form = ClientScheduleForm()
+
+    return render(request, 'client/schedule_interview.html', {
+        'form': form, 
+        'app': app
+    })
 
 @login_required
 def client_create_request(request):
