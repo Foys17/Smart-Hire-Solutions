@@ -48,6 +48,7 @@ urlpatterns = [
     path('portal/question/<int:question_id>/delete/', views.delete_question, name='client_delete_question'),
     path('portal/request/<int:job_id>/edit/', views.client_edit_request, name='client_edit_request'),
     path('portal/request/<int:job_id>/delete/', views.client_delete_request, name='client_delete_request'),
+    path('portal/question/<int:question_id>/edit/', views.client_edit_question, name='client_edit_question'),
 
     # HR Actions
     path('hr/requests/', views.hr_pending_requests, name='hr_pending_requests'),

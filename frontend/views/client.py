@@ -5,6 +5,9 @@ from jobs.models import Job,Question
 from candidates.models import Application
 from django.db.models import Count, Q
 from frontend.forms import ClientJobRequestForm,QuestionForm
+from django.contrib.auth import get_user_model
+from django.urls import reverse
+from users.models import Notification
 
 @login_required
 def client_dashboard(request):
@@ -67,7 +70,6 @@ def client_decision(request, application_id, decision):
     app.save()
     return redirect('web_test:client_job_view', job_id=app.job.id)
 
-
 @login_required
 def client_create_request(request):
     if request.user.role != 'Client':
@@ -83,6 +85,22 @@ def client_create_request(request):
             job.status = 'REQUESTED' 
             job.save()
             
+            # --- START NEW CODE ---
+            # 1. Get the User model
+            User = get_user_model()
+            
+            # 2. Find all users with the role 'HR'
+            hr_users = User.objects.filter(role='HR')
+            
+            # 3. Create a notification for each HR user
+            for hr in hr_users:
+                Notification.objects.create(
+                    user=hr,
+                    message=f"New Job Request from {request.user.full_name}: {job.title}",
+                    link=reverse('web_test:hr_pending_requests')  # Directs HR to the pending requests page
+                )
+            # --- END NEW CODE ---
+
             messages.success(request, "Request submitted!")
             
             if job.has_primary_exam:
@@ -90,42 +108,44 @@ def client_create_request(request):
             
             return redirect('web_test:client_dashboard')
         else:
-            
-            # 1. Catch the specific "Description vs PDF" error (Non-field error)
+            # Error handling logic (keep your existing error handling here)
             for error in form.non_field_errors():
                 messages.warning(request, f"⚠️ {error}") 
-            
-            # 2. Catch other field errors (e.g., missing Title)
             for field_name, errors in form.errors.items():
                 if field_name != '__all__':
                     for error in errors:
                         messages.warning(request, f"⚠️ {field_name.replace('_', ' ').title()}: {error}")
-            
 
     else:
         form = ClientJobRequestForm()
         
     return render(request, 'client/create_request.html', {'form': form})
 
-
 @login_required
 def client_edit_request(request, job_id):
     job = get_object_or_404(Job, id=job_id)
     
-    # 1. Security Check: Must be owner AND status must be REQUESTED
+    # Security Check
     if job.client_contact != request.user:
         messages.error(request, "Access Denied.")
         return redirect('web_test:client_dashboard')
         
-    if job.status != 'REQUESTED':
-        messages.error(request, "This job is already active/closed and cannot be edited. Contact HR.")
+    # --- CHANGED LOGIC START ---
+    # Allow editing if status is REQUESTED OR OPEN
+    if job.status not in ['REQUESTED', 'OPEN']:
+        messages.error(request, "This job is closed and cannot be edited.")
         return redirect('web_test:client_dashboard')
+    # --- CHANGED LOGIC END ---
 
     if request.method == 'POST':
         form = ClientJobRequestForm(request.POST, request.FILES, instance=job)
         if form.is_valid():
             form.save()
             messages.success(request, "Request updated successfully.")
+            
+            # If user clicked "Save & Manage Questions", redirect there
+            if 'manage_questions' in request.POST or job.has_primary_exam:
+                return redirect('web_test:client_add_questions', job_id=job.id)
             return redirect('web_test:client_dashboard')
     else:
         form = ClientJobRequestForm(instance=job)
@@ -204,3 +224,51 @@ def delete_question(request, question_id):
     question.delete()
     messages.success(request, "Question removed.")
     return redirect('web_test:client_add_questions', job_id=job_id)
+
+
+@login_required
+def client_edit_question(request, question_id):
+    question = get_object_or_404(Question, id=question_id)
+    job = question.job
+    
+    # Security Check
+    if job.client_contact != request.user:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:client_dashboard')
+
+    if request.method == 'POST':
+        form = QuestionForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            
+            # Update the existing question instance manually
+            question.text = data['text']
+            question.choices = [
+                data['option_1'],
+                data['option_2'],
+                data['option_3'],
+                data['option_4']
+            ]
+            question.correct_answer_index = int(data['correct_option'])
+            question.save()
+            
+            messages.success(request, "Question updated!")
+            return redirect('web_test:client_add_questions', job_id=job.id)
+    else:
+        # Pre-fill form with existing data
+        initial_data = {
+            'text': question.text,
+            'option_1': question.choices[0],
+            'option_2': question.choices[1],
+            'option_3': question.choices[2],
+            'option_4': question.choices[3],
+            'correct_option': str(question.correct_answer_index)
+        }
+        form = QuestionForm(initial=initial_data)
+
+    return render(request, 'client/add_questions.html', {
+        'job': job,
+        'form': form,
+        'questions': job.questions.all(),
+        'editing': True # You can use this in template to change button text to "Update"
+    })

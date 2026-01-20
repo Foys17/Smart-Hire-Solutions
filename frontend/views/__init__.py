@@ -12,7 +12,8 @@ from .candidates import (
     quick_move_candidate,create_offer,view_offer,respond_offer
 )
 from .client import (client_dashboard, client_job_view, client_decision,
-    client_create_request,add_questions_view,delete_question,client_edit_request,client_delete_request
+    client_create_request,add_questions_view,delete_question,client_edit_request,client_delete_request,
+    client_edit_question
 )
 
 from .exam import take_exam

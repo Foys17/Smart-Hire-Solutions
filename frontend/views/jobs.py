@@ -7,43 +7,40 @@ from jobs.utils import run_ai_pipeline
 from frontend.forms import JobForm
 from django.db.models import Q
 from django.contrib.auth import get_user_model
+from users.models import Notification 
+from django.urls import reverse
 
 def job_list(request):
     query = request.GET.get('q', '')
-    location = request.GET.get('location', '')
-    client_id = request.GET.get('client', '') # <--- NEW: Get client filter
+    client_id = request.GET.get('client', '') # Get client filter
     
     # 1. Start with ONLY 'OPEN' jobs
     jobs = Job.objects.filter(status='OPEN') 
 
-    # 2. Apply Search Filters
+    # 2. Apply Search Filters (Title & Description only)
     if query:
         jobs = jobs.filter(
             Q(title__icontains=query) | 
-            Q(description_text__icontains=query) |
-            Q(skills_required__icontains=query) 
+            Q(description_text__icontains=query)
         )
     
-    if location:
-        jobs = jobs.filter(location__icontains=location) 
-
-    # --- NEW: CLIENT FILTER ---
+    # --- CLIENT FILTER ---
     if client_id:
         jobs = jobs.filter(client_contact_id=client_id)
     
     # Organize: Sort by Client Name first, then Date
     jobs = jobs.order_by('client_contact__full_name', '-created_at')
 
-    # --- NEW: FETCH CLIENT LIST FOR DROPDOWN ---
+    # --- FETCH CLIENT LIST FOR DROPDOWN ---
     # Only get users who are clients AND have at least one open job
     User = get_user_model()
     clients = User.objects.filter(
         role='Client', 
-        posted_jobs__status='OPEN'
+        client_jobs__status='OPEN' 
     ).distinct().values('id', 'full_name')
     # -------------------------------------------
 
-    # --- CHECK CANDIDATE STATUS (Existing Logic) ---
+    # --- CHECK CANDIDATE STATUS ---
     if request.user.is_authenticated and request.user.role == 'Candidate':
         user_applications = Application.objects.filter(candidate=request.user).values('job_id', 'status')
         apps_map = {app['job_id']: app['status'] for app in user_applications}
@@ -58,7 +55,6 @@ def job_list(request):
     context = {
         'jobs': jobs, 
         'query': query,
-        'location': location,
         'selected_client': client_id, # Pass back to keep dropdown selected
         'clients': clients            # Pass list to template
     }
@@ -181,11 +177,19 @@ def hr_approve_request(request, job_id):
         return redirect('web_test:home')
         
     job.status = 'OPEN'
-    job.posted_by = request.user # Assign the HR who approved it as the owner
+    job.posted_by = request.user 
     job.save()
     
-    # Run AI Pipeline now that it is approved
     run_ai_pipeline(job)
+    
+    # --- NEW CODE: NOTIFY THE CLIENT ---
+    if job.client_contact:
+        Notification.objects.create(
+            user=job.client_contact,
+            message=f"Good news! Your job request '{job.title}' has been APPROVED and is now live.",
+            link=reverse('web_test:client_job_view', args=[job.id])
+        )
+    # -----------------------------------
     
     messages.success(request, f"Job '{job.title}' is now LIVE and Candidates can apply!")
     return redirect('web_test:job_list')
@@ -195,6 +199,20 @@ def hr_reject_request(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
     if request.user.role not in ['HR', 'Admin']: return redirect('web_test:home')
     
-    job.delete() # Or set status='REJECTED' if you want to keep record
+    # Store title and client before deleting
+    job_title = job.title
+    client = job.client_contact
+    
+    job.delete() 
+
+    # --- NEW CODE: NOTIFY THE CLIENT ---
+    if client:
+        Notification.objects.create(
+            user=client,
+            message=f"Update regarding '{job_title}': This request was declined by HR. Please contact us for details.",
+            link='#' # No link since job is deleted
+        )
+    # -----------------------------------
+
     messages.info(request, "Job request rejected and removed.")
     return redirect('web_test:hr_pending_requests')
