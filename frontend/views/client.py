@@ -48,12 +48,11 @@ def client_job_view(request, job_id):
         return redirect('web_test:client_dashboard')
 
     # --- CHANGED LOGIC: FETCH ALL RELEVANT CANDIDATES ---
-    # Fetch candidates currently in review, OR those already offered/rejected by client
-    # We exclude 'INTERVIEW' or 'SCREENING' because those haven't reached the client yet.
     candidates = Application.objects.filter(
         job=job,
         status__in=['CLIENT_REVIEW', 'OFFER', 'FINAL_INTERVIEW', 'HIRED', 'REJECTED']
-    ).order_by('-match_score')
+    ).select_related('candidate').prefetch_related('interview_score').order_by('-match_score')
+    # ^ Added select_related for user details and prefetch_related for the OneToOne score
     # ----------------------------------------------------
 
     return render(request, 'client/review_candidates.html', {

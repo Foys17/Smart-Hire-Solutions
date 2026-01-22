@@ -13,6 +13,11 @@ def register_view(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            
+            # --- FIX: Specify the backend before logging in ---
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            # --------------------------------------------------
+            
             login(request, user)
             messages.success(request, f"Welcome, {user.full_name}!")
             
