@@ -128,11 +128,12 @@ def client_create_offer(request, application_id):
     return render(request, 'client/create_offer.html', {'form': form, 'app': app})
 
 
+# frontend/views/client.py
+
 @login_required
 def client_schedule_interview(request, application_id):
     app = get_object_or_404(Application, id=application_id)
     
-    # Security Check
     if app.job.client_contact != request.user:
         messages.error(request, "Access Denied")
         return redirect('web_test:client_dashboard')
@@ -147,24 +148,26 @@ def client_schedule_interview(request, application_id):
             
             dt_string = f"{date} {time}"
             
-            # --- UPDATED SAVING LOGIC ---
+            # 1. Update Application & SAVE ALL FIELDS
             app.status = 'FINAL_INTERVIEW'
             app.interview_date = dt_string
-            app.interview_location = location  # <--- Saving Location
-            app.interview_note = notes         # <--- Saving Notes
+            app.interview_location = location 
+            app.interview_note = notes         
             app.save()
 
-            # 3. Notify Candidate
+            # 2. Notify Candidate -> Redirect to Status Page
             Notification.objects.create(
                 user=app.candidate,
-                message=f"Final Interview Scheduled! {date} at {time}. Check details.",
-                link=reverse('web_test:application_detail', args=[app.id])
+                message=f"📅 Final Interview Scheduled: {date} at {time}. Click to view details.",
+                link=reverse('web_test:candidate_job_status', args=[app.job.id]) 
             )
             
-            # 4. Notify HR (Optional)
-            
-            messages.success(request, f"Final Interview scheduled with {app.candidate.full_name} on {date} at {time}.")
+            messages.success(request, f"Final Interview scheduled! Notification sent to {app.candidate.full_name}.")
             return redirect('web_test:client_job_view', job_id=app.job.id)
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.warning(request, f"⚠️ {field.title()}: {error}")
     else:
         form = ClientScheduleForm()
 

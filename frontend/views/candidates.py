@@ -431,6 +431,8 @@ def update_application_status(request):
     except Exception as e: return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
+# frontend/views/candidates.py
+
 @login_required
 def schedule_interview_view(request, app_id):
     app = get_object_or_404(Application, pk=app_id)
@@ -438,22 +440,43 @@ def schedule_interview_view(request, app_id):
     if request.method == 'POST':
         form = InterviewInviteForm(request.POST)
         if form.is_valid():
-            # 1. Update Application
+            # Extract data
+            reviewer = form.cleaned_data['reviewer']
+            date = form.cleaned_data['date']
+            time = form.cleaned_data['time']
+            location = form.cleaned_data['location']
+            message = form.cleaned_data['message']
+
+            # 1. Update Application & SAVE ALL FIELDS
             app.status = 'INTERVIEW'
-            app.assigned_reviewer = form.cleaned_data['reviewer']
+            app.assigned_reviewer = reviewer
+            app.interview_date = f"{date} {time}" 
+            app.interview_location = location     
+            app.interview_note = message         
             app.save()
             
             # 2. Notify Reviewer
             Notification.objects.create(
                 user=app.assigned_reviewer,
-                message=f"New Interview: {app.candidate.full_name} for {app.job.title}",
+                message=f"New Interview Assignment: {app.candidate.full_name}",
                 link=reverse('web_test:reviewer_dashboard')
             )
+
+            # 3. Notify Candidate -> Redirect to Status Page
+            Notification.objects.create(
+                user=app.candidate,
+                message=f"📅 Interview Scheduled: {date} at {time}. Click to view details.",
+                link=reverse('web_test:candidate_job_status', args=[app.job.id])
+            )
             
-            messages.success(request, f"Interview scheduled with {app.assigned_reviewer.full_name}")
+            messages.success(request, f"Interview scheduled! Notification sent to {app.candidate.full_name}")
             return redirect('web_test:kanban_board')
+        
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.warning(request, f"⚠️ {field.title()}: {error}")
     else:
-        # Pre-fill hidden app_id
         form = InterviewInviteForm(initial={'application_ids': app.id})
 
     return render(request, 'hr/schedule_interview.html', {'form': form, 'app': app})

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
 from .models import Application
+from django.utils import timezone
 
 
 User = get_user_model()
@@ -79,3 +80,8 @@ class InterviewInviteSerializer(serializers.Serializer):
     time = serializers.TimeField()
     location = serializers.CharField(max_length=255)
     message = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_date(self, value):
+        if value < timezone.now().date():
+            raise serializers.ValidationError("You cannot schedule an interview in the past.")
+        return value

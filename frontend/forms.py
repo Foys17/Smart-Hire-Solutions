@@ -4,6 +4,7 @@ from candidates.models import Application, Offer
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from reviewer.models import InterviewScore
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -159,6 +160,12 @@ class InterviewInviteForm(forms.Form):
         required=False,
         label="Additional Message"
     )
+
+    def clean_date(self):
+        date = self.cleaned_data['date']
+        if date < timezone.now().date():
+            raise forms.ValidationError("You cannot schedule an interview in the past.")
+        return date
 
 class CVBuilderForm(forms.Form):
     full_name = forms.CharField(
@@ -323,3 +330,9 @@ class ClientScheduleForm(forms.Form):
         required=False,
         label="Notes for Candidate"
     )
+
+    def clean_date(self):
+        date = self.cleaned_data['date']
+        if date < timezone.now().date():
+            raise forms.ValidationError("You cannot schedule an interview in the past.")
+        return date
