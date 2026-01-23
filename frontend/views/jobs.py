@@ -4,7 +4,7 @@ from django.contrib import messages
 from jobs.models import Job
 from candidates.models import Application
 from jobs.utils import run_ai_pipeline
-from frontend.forms import JobForm,InterviewInviteForm
+from frontend.forms import JobForm, InterviewInviteForm
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 from users.models import Notification 
@@ -14,35 +14,27 @@ from django.conf import settings
 
 def job_list(request):
     query = request.GET.get('q', '')
-    client_id = request.GET.get('client', '') # Get client filter
+    client_id = request.GET.get('client', '')
     
-    # 1. Start with ONLY 'OPEN' jobs
     jobs = Job.objects.filter(status='OPEN') 
 
-    # 2. Apply Search Filters (Title & Description only)
     if query:
         jobs = jobs.filter(
             Q(title__icontains=query) | 
             Q(description_text__icontains=query)
         )
     
-    # --- CLIENT FILTER ---
     if client_id:
         jobs = jobs.filter(client_contact_id=client_id)
     
-    # Organize: Sort by Client Name first, then Date
     jobs = jobs.order_by('client_contact__full_name', '-created_at')
 
-    # --- FETCH CLIENT LIST FOR DROPDOWN ---
-    # Only get users who are clients AND have at least one open job
     User = get_user_model()
     clients = User.objects.filter(
         role='Client', 
         client_jobs__status='OPEN' 
     ).distinct().values('id', 'full_name')
-    # -------------------------------------------
 
-    # --- CHECK CANDIDATE STATUS ---
     if request.user.is_authenticated and request.user.role == 'Candidate':
         user_applications = Application.objects.filter(candidate=request.user).values('job_id', 'status')
         apps_map = {app['job_id']: app['status'] for app in user_applications}
@@ -52,20 +44,18 @@ def job_list(request):
             job.current_user_status = apps_map.get(job.id) 
             jobs_list.append(job)
         jobs = jobs_list
-    # -----------------------------------------------
 
     context = {
         'jobs': jobs, 
         'query': query,
-        'selected_client': client_id, # Pass back to keep dropdown selected
-        'clients': clients            # Pass list to template
+        'selected_client': client_id,
+        'clients': clients
     }
     return render(request, 'job_list.html', context)
 
 def job_detail(request, pk):  
     job = get_object_or_404(Job, pk=pk)
     
-    # SECURITY: Prevent direct access to 'Pending' jobs
     if job.status == 'REQUESTED':
         is_owner = (request.user.is_authenticated and job.client_contact == request.user)
         is_hr = (request.user.is_authenticated and request.user.role in ['HR', 'Admin'])
@@ -74,7 +64,6 @@ def job_detail(request, pk):
             messages.error(request, "This job is currently pending approval.")
             return redirect('web_test:job_list')
 
-    # OPTIONAL: Pass status to detail view too if you want the button there to update as well
     if request.user.is_authenticated and request.user.role == 'Candidate':
         application = Application.objects.filter(candidate=request.user, job=job).first()
         if application:
@@ -84,7 +73,6 @@ def job_detail(request, pk):
 
 @login_required
 def create_job(request):
-    """HR Only: Post a job."""
     if request.user.role != 'HR':
         messages.error(request, "Only HR can post jobs.")
         return redirect('web_test:job_list')
@@ -140,10 +128,6 @@ def delete_job(request, pk):
 
 @login_required
 def toggle_job_status(request, pk):
-    """
-    Switches job between OPEN and CLOSED.
-    Closing a job now REJECTS all non-shortlisted candidates instead of deleting them.
-    """
     job = get_object_or_404(Job, pk=pk)
     
     if request.user.role != 'HR':
@@ -164,7 +148,6 @@ def toggle_job_status(request, pk):
 
 @login_required
 def hr_pending_requests(request):
-    """Shows all jobs with status='REQUESTED' for HR to review."""
     if request.user.role not in ['HR', 'Admin']:
         return redirect('web_test:home')
         
@@ -184,14 +167,12 @@ def hr_approve_request(request, job_id):
     
     run_ai_pipeline(job)
     
-    # --- NEW CODE: NOTIFY THE CLIENT ---
     if job.client_contact:
         Notification.objects.create(
             user=job.client_contact,
             message=f"Good news! Your job request '{job.title}' has been APPROVED and is now live.",
             link=reverse('web_test:client_job_view', args=[job.id])
         )
-    # -----------------------------------
     
     messages.success(request, f"Job '{job.title}' is now LIVE and Candidates can apply!")
     return redirect('web_test:job_list')
@@ -201,20 +182,17 @@ def hr_reject_request(request, job_id):
     job = get_object_or_404(Job, pk=job_id)
     if request.user.role not in ['HR', 'Admin']: return redirect('web_test:home')
     
-    # Store title and client before deleting
     job_title = job.title
     client = job.client_contact
     
     job.delete() 
 
-    # --- NEW CODE: NOTIFY THE CLIENT ---
     if client:
         Notification.objects.create(
             user=client,
             message=f"Update regarding '{job_title}': This request was declined by HR. Please contact us for details.",
-            link='#' # No link since job is deleted
+            link='#' 
         )
-    # -----------------------------------
 
     messages.info(request, "Job request rejected and removed.")
     return redirect('web_test:hr_pending_requests')
@@ -229,6 +207,10 @@ def hr_schedule_interview(request):
     if request.user.role not in ['HR', 'Admin']:
         messages.error(request, "Access Denied")
         return redirect('web_test:home')
+
+    # Initialize defaults to prevent UnboundLocalError on GET or invalid POST
+    apps = Application.objects.none()
+    single_app = None
 
     if request.method == 'POST':
         form = InterviewInviteForm(request.POST)
@@ -250,18 +232,22 @@ def hr_schedule_interview(request):
                 # Update Status & Reviewer
                 app.status = 'INTERVIEW'
                 app.assigned_reviewer = reviewer
-                app.interview_date = f"{date} {time}" # Storing loosely for display
+                
+                # --- FIX 1: Save ALL details to the database ---
+                app.interview_date = f"{date} {time}" 
+                app.interview_location = location  # <--- Was missing
+                app.interview_note = message       # <--- Was missing
                 app.save()
 
                 # A. Notify Candidate (Dashboard)
+                # --- FIX 2: Redirect to Candidate Status Page (using job.id) ---
                 Notification.objects.create(
                     user=app.candidate,
                     message=f"Interview Scheduled! Date: {date} at {time}. Check details.",
-                    link=reverse('web_test:application_detail', args=[app.id])
+                    link=reverse('web_test:candidate_job_status', args=[app.job.id]) # <--- Changed link
                 )
 
                 # B. Notify Candidate (Email)
-                # Note: Configure EMAIL_HOST in settings.py for this to work
                 try:
                     send_mail(
                         subject=f"Interview Invitation - {app.job.title}",
@@ -274,7 +260,7 @@ def hr_schedule_interview(request):
                         fail_silently=True
                     )
                 except Exception:
-                    pass # Don't crash if email fails (local dev)
+                    pass 
 
             # 4. Notify Reviewer (One summary notification)
             Notification.objects.create(
@@ -284,21 +270,26 @@ def hr_schedule_interview(request):
             )
 
             messages.success(request, f"Successfully scheduled interviews for {count} candidates.")
-            return redirect('web_test:kanban_board') # Or wherever you want to land
+            return redirect('web_test:kanban_board')
+        
+        # If form is invalid, restore 'apps' for display
+        ids = request.POST.get('application_ids', '')
+        if ids:
+            id_list = ids.split(',')
+            apps = Application.objects.filter(id__in=id_list)
+            single_app = apps.first() if apps.count() == 1 else None
+
     else:
-        # GET request: Usually comes from the Ranking/Kanban page with IDs in query string
+        # GET request
         ids = request.GET.get('ids', '')
         form = InterviewInviteForm(initial={'application_ids': ids})
         
-        # Preview the candidates
         id_list = ids.split(',') if ids else []
         apps = Application.objects.filter(id__in=id_list)
-        
-        # If just one app, we can be smart and show that candidate's name in title
         single_app = apps.first() if len(apps) == 1 else None
 
     return render(request, 'hr/schedule_interview.html', {
         'form': form,
         'apps': apps,
-        'app': single_app # For the template title "Candidate: X"
+        'app': single_app 
     })

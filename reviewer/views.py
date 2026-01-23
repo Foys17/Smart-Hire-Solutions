@@ -122,7 +122,7 @@ def finish_interview_process(request, job_id):
     # 3. Select Top N Candidates
     top_n_count = job.target_candidates_count
     selected = scored_candidates[:top_n_count]
-    rejected = scored_candidates[top_n_count:] # The rest are rejected or kept in pool
+    rejected = scored_candidates[top_n_count:] # The rest are rejected
 
     # 4. Process Logic
     promoted_names = []
@@ -130,29 +130,16 @@ def finish_interview_process(request, job_id):
     for app, score in selected:
         promoted_names.append(app.candidate.full_name)
         
-        # LOGIC BRANCH: Does Client want to interview?
-        if job.client_does_final_interview:
-            # YES: Move to Client Review (So Client can Approve -> Final Interview)
-            app.status = 'CLIENT_REVIEW'
-            msg_body = f"Candidates shortlisted for {job.title} are ready for your review."
-            next_stage_desc = "Client Review"
-        else:
-            # NO: Move directly to OFFER (Skip Client)
-            app.status = 'OFFER'
-            msg_body = f"Candidates for {job.title} have been selected and Offers have been generated."
-            next_stage_desc = "Offer Sent"
-            
-            # Notify Candidate immediately
-            Notification.objects.create(
-                user=app.candidate,
-                message=f"Congratulations! You have received an Offer for {job.title}.",
-                link=reverse('web_test:view_offer', args=[app.id]) # Assuming you have this view
-            )
-
+        # --- CHANGED LOGIC HERE ---
+        # ALWAYS move to CLIENT_REVIEW. 
+        # Do NOT automatically create an offer, even if client_does_final_interview is False.
+        # This forces the Client to see the result and click "Select Candidate" manually,
+        # which triggers the Negotiation flow we added earlier.
+        
+        app.status = 'CLIENT_REVIEW'
         app.save()
 
-    # 5. Handle Rejected (Optional: Mark as REJECTED or leave in INTERVIEW?)
-    # For now, let's mark them as REJECTED so the pipeline is clean.
+    # 5. Handle Rejected
     for app, score in rejected:
         app.status = 'REJECTED'
         app.save()
@@ -161,9 +148,9 @@ def finish_interview_process(request, job_id):
     if job.client_contact:
         Notification.objects.create(
             user=job.client_contact,
-            message=msg_body,
-            link=reverse('web_test:client_dashboard')
+            message=f"Ranking Complete: {len(promoted_names)} candidates for '{job.title}' are ready for your review.",
+            link=reverse('web_test:client_job_view', args=[job.id])
         )
 
-    messages.success(request, f"Interview Process Finished! {len(promoted_names)} candidates moved to {next_stage_desc}.")
+    messages.success(request, f"Ranking Submitted! {len(promoted_names)} candidates sent to Client for review.")
     return redirect('web_test:reviewer_dashboard')

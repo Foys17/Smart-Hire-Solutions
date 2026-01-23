@@ -2,13 +2,14 @@ from django.db import models
 from django.conf import settings
 from jobs.models import Job
 
-# --- UPDATED KANBAN STAGES ---
 STATUS_CHOICES = (
     ('PENDING_EXAM', 'Pending Exam'),
-    ('APPLIED', 'Applied'),           # <--- Screening Passed / No Exam
+    ('APPLIED', 'Applied'),
     ('INTERVIEW', 'Internal Interview'),
-    ('CLIENT_REVIEW', 'Client Review'),     # <--- Shortlisted for Client Decision
-    ('FINAL_INTERVIEW', 'Final Interview'), # <--- If Client wants to interview
+    ('CLIENT_REVIEW', 'Client Review'),
+    ('FINAL_INTERVIEW', 'Final Interview'),
+    ('NEGOTIATION', 'Salary Negotiation'),           
+    ('NEGOTIATION_SUBMITTED', 'Negotiation Submitted'), 
     ('OFFER', 'Offer Sent'),
     ('HIRED', 'Hired'),
     ('REJECTED', 'Rejected'),
@@ -36,9 +37,16 @@ class Application(models.Model):
     offer_salary = models.CharField(max_length=100, null=True, blank=True, help_text="e.g. $5,000/month")
     offer_start_date = models.DateField(null=True, blank=True)
     offer_message = models.TextField(null=True, blank=True, help_text="Personal note or official terms")
-    
+    candidate_expected_salary = models.CharField(
+        max_length=100, null=True, blank=True, 
+        help_text="Candidate's expected salary input"
+    )
+    candidate_joining_date = models.DateField(
+        null=True, blank=True,
+        help_text="Candidate's expected joining date"
+    )
     # Pipeline Status
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='APPLIED')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='APPLIED')
     
     # Reviewer Assignment
     assigned_reviewer = models.ForeignKey(

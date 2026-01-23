@@ -13,7 +13,7 @@ import json
 from jobs.models import Job,Question
 from candidates.models import Application,Offer
 from candidates.utils import process_application, search_global_talent, extract_text_from_pdf
-from frontend.forms import ApplicationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm,OfferForm
+from frontend.forms import ApplicationForm, HRUploadCVForm, InterviewInviteForm, CVBuilderForm,OfferForm,CandidateNegotiationForm
 from frontend.utils import generate_ats_cv
 from users.models import Notification
 
@@ -579,3 +579,36 @@ def respond_offer(request, application_id, response):
         messages.info(request, "You have declined the job offer.")
 
     return redirect('web_test:home')
+
+
+
+@login_required
+def candidate_negotiation(request, application_id):
+    app = get_object_or_404(Application, pk=application_id)
+    
+    # Security Check
+    if app.candidate != request.user:
+        messages.error(request, "Access Denied")
+        return redirect('web_test:home')
+    
+    if request.method == 'POST':
+        form = CandidateNegotiationForm(request.POST, instance=app)
+        if form.is_valid():
+            app = form.save(commit=False)
+            app.status = 'NEGOTIATION_SUBMITTED'
+            app.save()
+            
+            # Notify Client
+            if app.job.client_contact:
+                Notification.objects.create(
+                    user=app.job.client_contact,
+                    message=f"Counter-Offer Received: {app.candidate.full_name} has submitted expected salary & date.",
+                    link=reverse('web_test:client_job_view', args=[app.job.id])
+                )
+            
+            messages.success(request, "Your requirements have been sent to the client!")
+            return redirect('web_test:candidate_job_status', job_id=app.job.id)
+    else:
+        form = CandidateNegotiationForm(instance=app)
+        
+    return render(request, 'candidates/negotiation.html', {'form': form, 'app': app})

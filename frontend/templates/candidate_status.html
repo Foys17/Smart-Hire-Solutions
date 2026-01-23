@@ -35,6 +35,29 @@
         </div>
         {% endif %}
 
+        {# --- NEGOTIATION NOTIFICATION SECTION --- #}
+        {% if application.status == 'NEGOTIATION' %}
+        <div class="mb-8 p-6 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-200 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+             <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+            <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+
+            <div class="flex items-center gap-5 relative z-10">
+                <div class="w-14 h-14 bg-white text-emerald-600 rounded-full flex items-center justify-center text-2xl shadow-sm animate-pulse">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="text-white">
+                    <h3 class="text-xl font-bold">Good News! Next Steps</h3>
+                    <p class="text-emerald-100 text-sm mt-1">The client is interested and wants to confirm your salary & joining date.</p>
+                </div>
+            </div>
+
+            <a href="{% url 'web_test:candidate_negotiation' application.id %}" 
+               class="relative z-10 px-6 py-3 bg-white text-emerald-700 font-bold rounded-xl shadow-md hover:bg-emerald-50 hover:shadow-lg transition-all flex items-center gap-2 transform hover:-translate-y-0.5 whitespace-nowrap">
+                <i class="bi bi-chat-quote-fill"></i> Respond Now
+            </a>
+        </div>
+        {% endif %}
+
         {# --- INTERVIEW SCHEDULE SECTION --- #}
         {% if application.interview_date %}
             {% if application.status == 'INTERVIEW' or application.status == 'FINAL_INTERVIEW' %}
@@ -114,7 +137,7 @@
                         {% if application.status == 'APPLIED' or application.status == 'PENDING_EXAM' %}0%
                         {% elif application.status == 'SHORTLISTED' or application.status == 'INTERVIEW' %}33%
                         {% elif application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' %}66%
-                        {% elif application.status == 'OFFER' or application.status == 'HIRED' %}100%
+                        {% elif application.status == 'OFFER' or application.status == 'HIRED' or application.status == 'NEGOTIATION' or application.status == 'NEGOTIATION_SUBMITTED' %}100%
                         {% endif %};">
                     </div>
 
@@ -138,11 +161,11 @@
 
                     <div class="flex flex-col items-center gap-2 relative">
                         <div class="w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10
-                            {% if application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
+                            {% if application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' or application.status == 'NEGOTIATION' or application.status == 'NEGOTIATION_SUBMITTED' %}bg-indigo-600 text-white{% else %}bg-slate-200 text-slate-400{% endif %}">
                             <i class="bi bi-building-check"></i>
                         </div>
                         <span class="absolute -bottom-8 text-[10px] font-bold uppercase tracking-wider w-24 text-center
-                            {% if application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' %}text-indigo-600{% else %}text-slate-400{% endif %}">
+                            {% if application.status == 'CLIENT_REVIEW' or application.status == 'FINAL_INTERVIEW' or application.status == 'OFFER' or application.status == 'HIRED' or application.status == 'NEGOTIATION' or application.status == 'NEGOTIATION_SUBMITTED' %}text-indigo-600{% else %}text-slate-400{% endif %}">
                             Final Review
                         </span>
                     </div>
@@ -174,6 +197,8 @@
                         {% if application.status == 'APPLIED' %}bg-blue-50 border-blue-200 text-blue-700
                         {% elif application.status == 'OFFER' %}bg-indigo-50 border-indigo-200 text-indigo-700
                         {% elif application.status == 'HIRED' %}bg-green-50 border-green-200 text-green-700
+                        {% elif application.status == 'NEGOTIATION' %}bg-emerald-50 border-emerald-200 text-emerald-700
+                        {% elif application.status == 'NEGOTIATION_SUBMITTED' %}bg-blue-50 border-blue-200 text-blue-700
                         {% elif application.status == 'REJECTED' %}bg-slate-50 border-slate-200 text-slate-600
                         {% else %}bg-emerald-50 border-emerald-200 text-emerald-700{% endif %}">
                         

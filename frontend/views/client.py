@@ -47,19 +47,20 @@ def client_job_view(request, job_id):
     if request.user != job.client_contact:
         return redirect('web_test:client_dashboard')
 
-    # --- CHANGED LOGIC: FETCH ALL RELEVANT CANDIDATES ---
+    # Fetch candidates including the new Negotiation statuses
     candidates = Application.objects.filter(
         job=job,
-        status__in=['CLIENT_REVIEW', 'OFFER', 'FINAL_INTERVIEW', 'HIRED', 'REJECTED']
-    ).select_related('candidate').prefetch_related('interview_score').order_by('-match_score')
-    # ^ Added select_related for user details and prefetch_related for the OneToOne score
-    # ----------------------------------------------------
+        status__in=[
+            'CLIENT_REVIEW', 'FINAL_INTERVIEW', 
+            'NEGOTIATION', 'NEGOTIATION_SUBMITTED', # <--- Included these
+            'OFFER', 'HIRED', 'REJECTED'
+        ]
+    ).select_related('candidate').order_by('-match_score')
 
     return render(request, 'client/review_candidates.html', {
         'job': job, 
         'candidates': candidates
     })
-
 
 @login_required
 def client_decision(request, application_id, decision):
@@ -70,16 +71,24 @@ def client_decision(request, application_id, decision):
         return redirect('web_test:client_dashboard')
 
     if decision == 'approve':
-        # Logic: If we are at the end of the process, go to Offer Creation
-        
-        # Condition A: Already in Final Interview -> Needs Offer
-        # Condition B: Job DOES NOT require Final Interview -> Needs Offer immediately
-        if app.status == 'FINAL_INTERVIEW' or not app.job.client_does_final_interview:
-            return redirect('web_test:client_create_offer', application_id=app.id)
+        # Condition A: Job requires Final Interview -> Schedule it
+        if app.job.client_does_final_interview and app.status == 'CLIENT_REVIEW':
+             return redirect('web_test:client_schedule_interview', application_id=app.id)
 
-        # Condition C: Job DOES require Final Interview and we are not there yet
-        elif app.job.client_does_final_interview:
-            return redirect('web_test:client_schedule_interview', application_id=app.id)
+        # Condition B: Ready for Offer/Negotiation (Final Interview Done OR Not Required)
+        # ACTION: Start Negotiation instead of sending blank Offer
+        app.status = 'NEGOTIATION'
+        app.save()
+
+        # Notify Candidate
+        Notification.objects.create(
+            user=app.candidate,
+            message=f"Action Required: {app.job.client_contact.full_name} is interested! Please review salary & joining details.",
+            link=reverse('web_test:candidate_negotiation', args=[app.id]) # <--- Link to new view
+        )
+        
+        messages.success(request, f"Request sent to {app.candidate.full_name} to confirm Salary & Joining Date.")
+        return redirect('web_test:client_job_view', job_id=app.job.id)
 
     elif decision == 'reject':
         app.status = 'REJECTED'
@@ -99,36 +108,33 @@ def client_create_offer(request, application_id):
     if request.method == 'POST':
         form = OfferCreationForm(request.POST)
         if form.is_valid():
-            # 1. Save Offer Details to Application
             app.offer_salary = form.cleaned_data['salary']
             app.offer_start_date = form.cleaned_data['start_date']
             app.offer_message = form.cleaned_data['message']
-            
-            # 2. Update Status
             app.status = 'OFFER'
             app.save()
 
-            # 3. Notification
             Notification.objects.create(
                 user=app.candidate,
-                message=f"🎉 CONGRATULATIONS! You have received a Job Offer for {app.job.title}!",
+                message=f"🎉 OFFICIAL OFFER: You have received a Job Offer for {app.job.title}!",
                 link=reverse('web_test:view_offer', args=[app.id])
             )
 
             messages.success(request, f"Offer sent to {app.candidate.full_name} successfully!")
             return redirect('web_test:client_job_view', job_id=app.job.id)
     else:
-        # Pre-fill some data if available
+        # PRE-FILL with Candidate's Negotiated Values if available
+        salary_val = app.candidate_expected_salary if app.candidate_expected_salary else app.job.monthly_salary
+        date_val = app.candidate_joining_date if app.candidate_joining_date else timezone.now().date()
+        
         initial_data = {
-            'salary': f"${app.job.monthly_salary}",
-            'message': f"Dear {app.candidate.full_name},\n\nWe are impressed with your skills and would like to formally offer you the position of {app.job.title}."
+            'salary': salary_val,
+            'start_date': date_val,
+            'message': f"Dear {app.candidate.full_name},\n\nWe are pleased to offer you the position of {app.job.title} based on our recent discussions."
         }
         form = OfferCreationForm(initial=initial_data)
 
     return render(request, 'client/create_offer.html', {'form': form, 'app': app})
-
-
-# frontend/views/client.py
 
 @login_required
 def client_schedule_interview(request, application_id):

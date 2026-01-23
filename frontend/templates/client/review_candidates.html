@@ -29,7 +29,8 @@
                 <tr>
                     <th class="p-6">Candidate</th>
                     <th class="p-6">AI Score</th>
-                    <th class="p-6">Reviewer Score & Notes</th> <th class="p-6 text-center">Current Status</th>
+                    <th class="p-6">Reviewer Score & Notes</th> 
+                    <th class="p-6 text-center">Current Status</th>
                     <th class="p-6 text-right">Decision</th>
                 </tr>
             </thead>
@@ -67,11 +68,23 @@
                             <span class="text-xs text-slate-400 italic">Interview pending or score not submitted.</span>
                         {% endif %}
                     </td>
+                    
                     <td class="p-6 text-center">
                         {% if app.status == 'OFFER' %}
                             <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">
                                 <i class="bi bi-envelope-check-fill"></i> Offer Sent
                             </span>
+                        
+                        {% elif app.status == 'NEGOTIATION' %}
+                            <span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold border border-amber-200">
+                                <i class="bi bi-hourglass-split"></i> Negotiating
+                            </span>
+                        
+                        {% elif app.status == 'NEGOTIATION_SUBMITTED' %}
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200">
+                                <i class="bi bi-reply-fill"></i> Response Received
+                            </span>
+
                         {% elif app.status == 'FINAL_INTERVIEW' %}
                             <div class="flex flex-col items-center gap-1">
                                 <span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">
@@ -85,14 +98,17 @@
                                     <span class="text-[10px] text-slate-400 italic">Schedule Pending</span>
                                 {% endif %}
                             </div>
+
                         {% elif app.status == 'REJECTED' %}
                             <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200">
                                 <i class="bi bi-x-circle-fill"></i> Rejected
                             </span>
+                        
                         {% elif app.status == 'HIRED' %}
                             <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold border border-purple-200">
                                 <i class="bi bi-trophy-fill"></i> Hired
                             </span>
+                        
                         {% else %}
                             <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold border border-yellow-200">
                                 Pending Review
@@ -101,34 +117,70 @@
                     </td>
 
                     <td class="p-6 text-right">
+                        {# CASE 1: HIRED #}
                         {% if app.status == 'HIRED' %}
                             <span class="text-slate-400 text-xs italic">Candidate Hired - Locked</span>
-                        {% else %}
+                        
+                        {# CASE 2: NEGOTIATION (Waiting for Candidate) #}
+                        {% elif app.status == 'NEGOTIATION' %}
+                            <div class="inline-block text-center">
+                                <span class="block text-amber-600 text-xs font-bold mb-1">
+                                    Waiting for Response
+                                </span>
+                                <span class="text-[10px] text-slate-400">Request Sent</span>
+                            </div>
+
+                        {# CASE 3: NEGOTIATION SUBMITTED (Ready for Offer) #}
+                        {% elif app.status == 'NEGOTIATION_SUBMITTED' %}
+                            <div class="flex flex-col items-end gap-2">
+                                <div class="text-right bg-slate-50 p-2 rounded border border-slate-100 mb-1">
+                                    <p class="text-[10px] uppercase text-slate-400 font-bold">Candidate Requirements</p>
+                                    <p class="text-xs text-slate-600">Salary: <span class="font-bold text-slate-900">{{ app.candidate_expected_salary|default:"--" }}</span></p>
+                                    <p class="text-xs text-slate-600">Join Date: <span class="font-bold text-slate-900">{{ app.candidate_joining_date|default:"--" }}</span></p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <a href="{% url 'web_test:client_decision' app.id 'reject' %}" 
+                                       class="px-3 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition text-xs font-bold"
+                                       title="Reject">
+                                        Reject
+                                    </a>
+                                    <a href="{% url 'web_test:client_create_offer' app.id %}" 
+                                       class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm font-bold text-xs transition">
+                                        Accept & Send Offer
+                                    </a>
+                                </div>
+                            </div>
+
+                        {# CASE 4: STANDARD APPROVAL #}
+                        {% elif app.status == 'CLIENT_REVIEW' or app.status == 'FINAL_INTERVIEW' %}
                             <div class="flex justify-end gap-2">
-                                
-                                {% if app.status != 'REJECTED' %}
                                 <a href="{% url 'web_test:client_decision' app.id 'reject' %}" 
-                                class="px-3 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition"
-                                onclick="return confirm('Reject this candidate?');">
+                                   class="px-3 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition"
+                                   onclick="return confirm('Reject this candidate?');" title="Reject">
                                     <i class="bi bi-x-lg"></i>
                                 </a>
-                                {% endif %}
 
-                                {% if app.status != 'OFFER' %}
                                 <a href="{% url 'web_test:client_decision' app.id 'approve' %}" 
-                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm font-semibold text-sm transition"
-                                onclick="return confirm('Confirm move to next stage?');">
-                                    {% if app.status == 'FINAL_INTERVIEW' %}
-                                        <i class="bi bi-check2-all"></i> Select for Hire
-                                    {% elif app.status == 'REJECTED' %}
-                                        Re-Approve
+                                   class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm font-semibold text-sm transition"
+                                   onclick="return confirm('Proceed with this candidate?');">
+                                    {% if job.client_does_final_interview and app.status == 'CLIENT_REVIEW' %}
+                                        Select for Interview
                                     {% else %}
-                                        Approve
+                                        Select Candidate
                                     {% endif %}
                                 </a>
-                                {% endif %}
-                                
                             </div>
+
+                        {# CASE 5: REJECTED (Re-Open) #}
+                        {% elif app.status == 'REJECTED' %}
+                            <a href="{% url 'web_test:client_decision' app.id 'approve' %}" class="text-indigo-600 text-xs font-bold hover:underline">
+                                Re-Consider
+                            </a>
+                            
+                        {# CASE 6: OFFER SENT #}
+                        {% elif app.status == 'OFFER' %}
+                            <span class="text-green-600 text-xs font-bold">Awaiting Acceptance</span>
+
                         {% endif %}
                     </td>
                 </tr>

@@ -48,10 +48,27 @@ class Job(models.Model):
     client_does_final_interview = models.BooleanField(default=True, help_text="Will the client interview the final shortlist?")
     
     # --- NEW: JOINING & SALARY DETAILS ---
+    
+    # We keep monthly_salary for internal fee calculations
     monthly_salary = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
-        help_text="Monthly Salary offered to the candidate per person"
+        help_text="Monthly Salary offered to the candidate per person (or Avg of Range)"
     )
+    
+    # New Fields for Range and Location
+    salary_min = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True, 
+        help_text="Minimum Monthly Salary"
+    )
+    salary_max = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True, 
+        help_text="Maximum Monthly Salary"
+    )
+    office_location = models.CharField(
+        max_length=255, null=True, blank=True, 
+        help_text="Office Location (e.g. Dhaka, Remote)"
+    )
+
     joining_date = models.DateField(null=True, blank=True, help_text="Expected Joining Date")
 
     # Exam Settings
@@ -82,6 +99,15 @@ class Job(models.Model):
     def __str__(self):
         return f"{self.title} ({self.get_status_display()})"
     
+    def save(self, *args, **kwargs):
+        """
+        Auto-calculates monthly_salary from the range if not explicitly provided.
+        This ensures agency fee calculations continue to work.
+        """
+        if self.salary_min and self.salary_max and not self.monthly_salary:
+            self.monthly_salary = (self.salary_min + self.salary_max) / 2
+        super().save(*args, **kwargs)
+
     @property
     def agency_fee_total(self):
         """

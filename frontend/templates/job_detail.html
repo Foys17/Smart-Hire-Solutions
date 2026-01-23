@@ -22,11 +22,30 @@
                     {% endif %}
                 </div>
                 
-                <div class="flex items-center gap-6 text-sm text-slate-500">
+                <div class="flex flex-wrap items-center gap-6 text-sm text-slate-500">
                     <div class="flex items-center gap-2">
                         <i class="bi bi-person text-slate-400 text-lg"></i>
                         <span>Posted by <span class="font-medium text-slate-700">{{ job.posted_by.full_name }}</span></span>
                     </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <i class="bi bi-geo-alt text-slate-400"></i>
+                        <span>{{ job.office_location|default:"Remote" }}</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <i class="bi bi-cash-stack text-slate-400"></i>
+                        <span class="font-medium text-slate-700">
+                            {% if job.salary_min and job.salary_max %}
+                                {{ job.salary_min|floatformat:0 }} - {{ job.salary_max|floatformat:0 }}
+                            {% elif job.monthly_salary %}
+                                ~{{ job.monthly_salary|floatformat:0 }}
+                            {% else %}
+                                Negotiable
+                            {% endif %}
+                        </span>
+                    </div>
+
                     <div class="flex items-center gap-2">
                         <i class="bi bi-calendar3 text-slate-400"></i>
                         <span>{{ job.created_at|date:"F d, Y" }}</span>

@@ -201,14 +201,13 @@ class CVBuilderForm(forms.Form):
     )
 
 
-# --- UPDATED CLIENT REQUEST FORM ---
 class ClientJobRequestForm(forms.ModelForm):
     class Meta:
         model = Job
         fields = [
             'title', 'description_text', 'description_file', 
             'target_candidates_count', 'client_does_final_interview',
-            'monthly_salary', 'joining_date',  # <--- ADDED NEW FIELDS
+            'salary_min', 'salary_max', 'office_location', 'joining_date', 
             'has_primary_exam', 'exam_passing_score'
         ]
         widgets = {
@@ -216,8 +215,12 @@ class ClientJobRequestForm(forms.ModelForm):
             'description_text': forms.Textarea(attrs={'class': INPUT_STYLE, 'rows': 4, 'placeholder': 'Describe the role, responsibilities, and requirements...'}),
             'description_file': forms.FileInput(attrs={'class': FILE_INPUT_STYLE}),
             'target_candidates_count': forms.NumberInput(attrs={'class': INPUT_STYLE, 'min': 1, 'value': 1}),
-            'monthly_salary': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. 50000'}), # <--- Widget
-            'joining_date': forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}), # <--- Widget
+            
+            'salary_min': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Min Salary'}),
+            'salary_max': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Max Salary'}),
+            'office_location': forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. 123 Tech Park, Dhaka (or Remote)'}),
+
+            'joining_date': forms.DateInput(attrs={'type': 'date', 'class': INPUT_STYLE}),
             'exam_passing_score': forms.NumberInput(attrs={'class': INPUT_STYLE, 'placeholder': '60'}),
         }
 
@@ -336,3 +339,24 @@ class ClientScheduleForm(forms.Form):
         if date < timezone.now().date():
             raise forms.ValidationError("You cannot schedule an interview in the past.")
         return date
+    
+
+class CandidateNegotiationForm(forms.ModelForm):
+    class Meta:
+        model = Application
+        fields = ['candidate_expected_salary', 'candidate_joining_date']
+        widgets = {
+            'candidate_expected_salary': forms.TextInput(attrs={
+                'class': INPUT_STYLE, 
+                'placeholder': 'e.g. 55000'
+            }),
+            'candidate_joining_date': forms.DateInput(attrs={
+                'type': 'date', 
+                'class': INPUT_STYLE
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['candidate_expected_salary'].label = "Your Expected Monthly Salary"
+        self.fields['candidate_joining_date'].label = "When can you join?"

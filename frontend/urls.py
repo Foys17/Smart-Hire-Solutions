@@ -69,6 +69,7 @@ urlpatterns = [
     # --- KANBAN ACTIONS ---
     path('candidate/move/<int:app_id>/<str:target_stage>/', views.quick_move_candidate, name='quick_move'),
     path('candidate/<int:app_id>/schedule/', views.schedule_interview_view, name='schedule_interview'),
+    path('candidate/negotiation/<int:application_id>/', views.candidate_negotiation, name='candidate_negotiation'),
 
 
     # --- OFFER MANAGEMENT ---
