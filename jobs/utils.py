@@ -5,10 +5,7 @@ from numpy.linalg import norm
 import numpy as np
 
 def extract_text_from_pdf(pdf_file):
-    """
-    Extracts text using 'Layout Analysis' (Blocks).
-    Essential for multi-column Job Descriptions.
-    """
+    
     text = ""
     try:
         with fitz.open(stream=pdf_file.read(), filetype="pdf") as doc:
@@ -57,7 +54,6 @@ def run_ai_pipeline(job_instance):
         print("⚠️ AI Models not loaded.")
         return
 
-    # 1. Get & Clean Text
     raw_text = job_instance.description_text or ""
     
     if job_instance.description_file:
@@ -78,7 +74,7 @@ def run_ai_pipeline(job_instance):
     if not clean_text:
         return
 
-    # 2. GLiNER Extraction
+    # GLiNER Extraction
     labels = [
         "Skill", "Technology", "Framework", "Programming Language", 
         "Software", "Tool", "Platform", "Database", "Cloud", "Service",
@@ -91,7 +87,6 @@ def run_ai_pipeline(job_instance):
         unique_data = []
         seen = set()
         
-        # --- LOGIC STEP: EXTRACT YEARS REQUIREMENT ---
         # We calculate this mathematically to ensure accuracy
         req_years = extract_years_required(clean_text)
         if req_years > 0:
@@ -103,12 +98,10 @@ def run_ai_pipeline(job_instance):
             text = e['text'].strip()
             label = e['label']
             
-            # --- FIX 1: FORCE EXPERIENCE RELABELING ---
             # Correct Python syntax: check 'year' OR 'years'
             if "year" in text.lower():
                 label = "Experience"
 
-            # --- FIX 2: FORCE AWS/TECH RELABELING ---
             if text.upper() in ["AWS", "AZURE", "GCP", "EC2", "RDS", "LAMBDA", "DOCKER", "KUBERNETES", "GIT", "GITHUB", "LINUX"]:
                 if label not in ["Job Title", "Experience"]:
                     label = "Technology"

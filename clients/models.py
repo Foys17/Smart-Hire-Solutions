@@ -18,7 +18,6 @@ class ClientCompany(models.Model):
     email = models.EmailField(help_text="Contact email for invoicing and updates")
     phone = models.CharField(max_length=50, blank=True)
     
-    # Agency Business Logic
     contract_status = models.CharField(
         max_length=20, 
         choices=ContractStatus.choices, 

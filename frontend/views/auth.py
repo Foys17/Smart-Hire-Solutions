@@ -11,12 +11,10 @@ def register_view(request):
 
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
-        if form.is_valid():
+        if form.is_valid(): #mail unique ebong password match kore kina
             user = form.save()
             
-            # --- FIX: Specify the backend before logging in ---
-            user.backend = 'django.contrib.auth.backends.ModelBackend'
-            # --------------------------------------------------
+            user.backend = 'django.contrib.auth.backends.ModelBackend' 
             
             login(request, user)
             messages.success(request, f"Welcome, {user.full_name}!")
@@ -49,10 +47,8 @@ def login_view(request):
             else:
                 request.session.set_expiry(1209600) 
 
-            # --- NEW REDIRECT LOGIC ---
             if user.role == 'Client':
                 return redirect('web_test:client_dashboard')
-            # --------------------------
 
             return redirect('web_test:job_list')
     else:

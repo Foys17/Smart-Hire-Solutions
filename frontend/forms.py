@@ -8,7 +8,7 @@ from django.utils import timezone
 
 User = get_user_model()
 
-# --- TAILWIND STYLES CONFIGURATION ---
+# TAILWIND STYLES CONFIGURATION 
 INPUT_STYLE = (
     "w-full px-4 py-2 border border-slate-300 rounded-lg "
     "focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 "
@@ -170,15 +170,15 @@ class InterviewInviteForm(forms.Form):
 class CVBuilderForm(forms.Form):
     full_name = forms.CharField(
         label="Full Name", 
-        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Jane Doe'})
+        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'Foysal'})
     )
     email = forms.EmailField(
         label="Email", 
-        widget=forms.EmailInput(attrs={'class': INPUT_STYLE, 'placeholder': 'jane@example.com'})
+        widget=forms.EmailInput(attrs={'class': INPUT_STYLE, 'placeholder': 'foysal@example.com'})
     )
     phone = forms.CharField(
         label="Phone Number", 
-        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': '+1 234 567 890'})
+        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': '01743216890'})
     )
     location = forms.CharField(
         label="Location", 
@@ -290,7 +290,7 @@ class OfferForm(forms.ModelForm):
 class OfferCreationForm(forms.Form):
     salary = forms.CharField(
         max_length=100,
-        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. $4,500 per month'}),
+        widget=forms.TextInput(attrs={'class': INPUT_STYLE, 'placeholder': 'e.g. BDT 4,500 per month'}),
         label="Offered Salary / Rate"
     )
     start_date = forms.DateField(

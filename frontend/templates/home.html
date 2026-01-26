@@ -3,12 +3,10 @@
 
 {% block content %}
 
-{# --- LOGIC SPLIT: DASHBOARD vs LANDING PAGE --- #}
+{# LOGIC SPLIT: DASHBOARD vs LANDING PAGE  #}
 {% if is_dashboard %}
 
-    {# ================================================================= #}
-    {# CASE 1: CANDIDATE DASHBOARD (UPDATED UI)                          #}
-    {# ================================================================= #}
+    {# CASE 1: CANDIDATE DASHBOARD (UPDATED UI) #}
     {% if request.user.role == 'Candidate' %}
     
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -150,9 +148,7 @@
         {% endif %}
     </div>
 
-    {# ================================================================= #}
-    {# CASE 2: AGENCY CEO DASHBOARD (HR / ADMIN ONLY)                    #}
-    {# ================================================================= #}
+    {# CASE 2: AGENCY CEO  (HR / ADMIN ONLY)  DASHBOARD  #}
     {% else %}
     
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -167,7 +163,7 @@
             </div>
         </div>
     
-        {# --- ROW 1: PRIMARY STATS --- #}
+        {# ROW 1: PRIMARY STATS  #}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {% comment %} <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden group">
                 <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
@@ -208,7 +204,7 @@
             </div>
         </div>
 
-        {# --- ROW 2: ADVANCED ANALYTICS --- #}
+        {# ROW 2: ADVANCED ANALYTICS #}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
                 <div class="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl">
@@ -233,7 +229,7 @@
             </div>
         </div>
     
-        {# --- ROW 3: CHARTS & RECENT HIRES --- #}
+        {# ROW 3: CHARTS & RECENT HIRES #}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -329,9 +325,7 @@
 
 {% else %}
 
-    {# ================================================================= #}
-    {# CASE 3: STANDARD LANDING PAGE (GUESTS)                            #}
-    {# ================================================================= #}
+    {# CASE 3: STANDARD LANDING PAGE (GUESTS)#}
     
     <section class="relative pt-6 pb-20 lg:pt-14 lg:pb-32 overflow-hidden">
         <div class="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>

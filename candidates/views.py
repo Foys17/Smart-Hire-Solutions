@@ -11,37 +11,32 @@ from .permissions import IsCandidate, IsHR, IsReviewer
 from .serializers import (
     ApplicationCreateSerializer, 
     ApplicationDetailSerializer, 
-    HRApplicationCreateSerializer, # New
-    InterviewInviteSerializer      # New
+    HRApplicationCreateSerializer, 
+    InterviewInviteSerializer      
 )
 
-class ApplyJobView(generics.CreateAPIView):
-    """
-    Candidate uploads CV here.
-    """
+class ApplyJobView(generics.CreateAPIView):     #Candidate eikhane CV upload kore.
+    
     serializer_class = ApplicationCreateSerializer
     permission_classes = [IsCandidate]
 
-    def perform_create(self, serializer):
-        # Save application
+    def perform_create(self, serializer): #default function ke override kora jate logged in user er id pay
         application = serializer.save(candidate=self.request.user)
         # Trigger AI (Extract -> Embed -> Score)
         process_application(application)
 
-class CandidateMyApplicationsView(generics.ListAPIView):
-    """
-    Candidate sees their own history.
-    """
+class CandidateMyApplicationsView(generics.ListAPIView):   #Candidate nijer history dekhe
+    
     serializer_class = ApplicationDetailSerializer
     permission_classes = [IsCandidate]
 
-    def get_queryset(self):
+    def get_queryset(self): #candidate jate shudhu nijer history dekhte pare
         return Application.objects.filter(candidate=self.request.user).order_by('-created_at')
 
 class JobApplicationsListView(generics.ListAPIView):
-    """
-    HR/Reviewer sees ALL candidates for a specific Job, RANKED BY SCORE.
-    """
+    
+    #HR/Reviewer sees ALL candidates for a specific Job, RANKED BY SCORE.
+    
     serializer_class = ApplicationDetailSerializer
     permission_classes = [permissions.IsAuthenticated] # Or IsHR | IsReviewer
 
@@ -62,11 +57,8 @@ class HRAddReferenceView(generics.CreateAPIView):
         # Trigger the same AI scoring pipeline
         process_application(application)
 
-class JobApplicationsListView(generics.ListAPIView):
-    """
-    HR/Reviewer sees ALL candidates.
-    Supports filtering by reference: ?has_reference=true
-    """
+class JobApplicationsListView(generics.ListAPIView):  #HR/Reviewer sees ALL candidates for a specific Job,
+    
     serializer_class = ApplicationDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -74,15 +66,13 @@ class JobApplicationsListView(generics.ListAPIView):
         job_id = self.kwargs.get('job_id')
         queryset = Application.objects.filter(job_id=job_id)
 
-        # --- NEW FILTERING LOGIC ---
         has_reference = self.request.query_params.get('has_reference')
         if has_reference is not None:
             # Convert string 'true'/'false' to boolean
             is_ref = has_reference.lower() == 'true'
             queryset = queryset.filter(has_reference=is_ref)
 
-        # Order by Score
-        return queryset.order_by('-match_score')
+        return queryset.order_by('-match_score') # Order by Score (-) mane descending order
     
 class SendInterviewInviteView(APIView):
     """
@@ -92,7 +82,7 @@ class SendInterviewInviteView(APIView):
 
     def post(self, request, pk):
         application = generics.get_object_or_404(Application, pk=pk)
-        serializer = InterviewInviteSerializer(data=request.data)
+        serializer = InterviewInviteSerializer(data=request.data) #validation kehane hoy je date time place valid kina
         
         if serializer.is_valid():
             data = serializer.validated_data

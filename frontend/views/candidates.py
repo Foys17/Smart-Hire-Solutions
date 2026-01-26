@@ -40,14 +40,13 @@ def apply_for_job(request, job_id):
             app.candidate = request.user
             app.job = job
             
-            # --- NEW LOGIC: EXAM CHECK ---
+            #EXAM CHECK
             if job.has_primary_exam:
                 app.status = 'PENDING_EXAM' # Don't show in HR dashboard yet
                 app.save()
                 messages.info(request, "Step 1 Complete. Now please take the primary skill assessment.")
                 return redirect('web_test:take_exam', application_id=app.id)
             else:
-                # Normal Flow
                 app.status = 'APPLIED'
                 app.save()
                 process_application(app) # Run AI Scoring immediately
@@ -134,15 +133,15 @@ def cv_builder(request):
 
     return render(request, 'cv_builder.html', {'form': form})
 
-# --- HR / RECRUITER ACTIONS ---
+# --- HR ACTIONS ---
 
 @login_required
-def job_ranking(request, job_id):
+def job_ranking(request, job_id): # function for ranking candidates based on a job
     job = get_object_or_404(Job, pk=job_id)
     apps = Application.objects.filter(job=job)
     if request.GET.get('ref'):
         apps = apps.filter(has_reference=True)
-    apps = apps.order_by('-match_score')
+    apps = apps.order_by('-match_score') #(-) Highest to lowest
     return render(request, 'ranking.html', {'job': job, 'applications': apps})
 
 @login_required
@@ -192,11 +191,12 @@ def application_detail(request, pk):
 
     synonyms = {"drf": "django rest framework", "reactjs": "react", "js": "javascript", "aws": "amazon web services"}
 
+    #This loop checks for the exact match between the job and CV
     for j_key, j_text in job_skills_map.items():
         matched = False
         if j_key in cv_skills_map:
             matches.append(j_text); matched = True
-        else:
+        else: #exact word match na korle eita substring match korar kaj kore
             for c_key, c_text in cv_skills_map.items():
                 if len(c_key) > 2 and len(j_key) > 2 and (c_key in j_key or j_key in c_key):
                     matches.append(f"{c_text} (matches {j_text})"); matched = True; break
@@ -370,10 +370,9 @@ def kanban_board(request):
     applications = Application.objects.select_related('candidate', 'job').all()
     if selected_job_id: applications = applications.filter(job_id=selected_job_id)
     
-    # --- UPDATED COLUMNS (Removed SCREENING) ---
     columns = {
         'APPLIED': [],
-        'INTERVIEW': [],        # Was missing in your previous dictionary
+        'INTERVIEW': [],       
         'CLIENT_REVIEW': [],
         'FINAL_INTERVIEW': [],
         'OFFER': [],
@@ -385,7 +384,6 @@ def kanban_board(request):
         if app.status in columns: 
             columns[app.status].append(app)
         else: 
-            # Fallback for any old statuses
             columns['APPLIED'].append(app)
             
     jobs = Job.objects.filter(status='OPEN')
@@ -406,7 +404,7 @@ def quick_move_candidate(request, app_id, target_stage):
     app.status = target_stage
     app.save()
 
-    # --- NOTIFICATION LOGIC ---
+    # NOTIFICATION LOGIC 
     if target_stage == 'CLIENT_REVIEW' and app.job.client_contact:
         Notification.objects.create(
             user=app.job.client_contact,
@@ -430,8 +428,6 @@ def update_application_status(request):
         return JsonResponse({'success': True})
     except Exception as e: return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
-
-# frontend/views/candidates.py
 
 @login_required
 def schedule_interview_view(request, app_id):
@@ -485,7 +481,6 @@ def schedule_interview_view(request, app_id):
 
 @login_required
 def create_offer(request, application_id):
-    # Security: HR/Admin Only
     if request.user.role not in ['HR', 'Admin']:
         return redirect('web_test:home')
         
@@ -498,7 +493,7 @@ def create_offer(request, application_id):
         existing_offer = None
 
     if request.method == 'POST':
-        form = OfferForm(request.POST, instance=existing_offer)
+        form = OfferForm(request.POST, instance=existing_offer) #offer exist korle edit korbe na exist korle new banabe
         if form.is_valid():
             offer = form.save(commit=False)
             offer.application = app
@@ -524,10 +519,9 @@ def create_offer(request, application_id):
     return render(request, 'hr/create_offer.html', {'form': form, 'app': app})
 
 @login_required
-def view_offer(request, application_id):
+def view_offer(request, application_id): #candidate nijer offer dekhte parar function
     app = get_object_or_404(Application, id=application_id)
     
-    # Security Check
     if app.candidate != request.user:
         messages.error(request, "Access Denied")
         return redirect('web_test:home')
@@ -535,25 +529,21 @@ def view_offer(request, application_id):
     return render(request, 'candidates/view_offer.html', {'application': app})
 
 @login_required
-def respond_offer(request, application_id, response):
+def respond_offer(request, application_id, response): #candidate offer accept or reject korar function
     app = get_object_or_404(Application, id=application_id)
 
-    # Security Check: Ensure only the candidate can respond
     if app.candidate != request.user:
         messages.error(request, "Unauthorized access.")
         return redirect('web_test:home')
 
-    # Security Check: Ensure status is actually OFFER
     if app.status != 'OFFER':
         messages.error(request, "This application does not have a pending offer.")
         return redirect('web_test:home')
 
     if response == 'ACCEPT':
-        # 1. Update Status
         app.status = 'HIRED'
         app.save()
 
-        # 2. Notify Client
         if app.job.client_contact:
             Notification.objects.create(
                 user=app.job.client_contact,
@@ -564,11 +554,10 @@ def respond_offer(request, application_id, response):
         messages.success(request, f"Congratulations! You have successfully accepted the offer for {app.job.title}.")
 
     elif response == 'DECLINE':
-        # 1. Update Status (You can use 'REJECTED' or a specific 'OFFER_DECLINED' status)
         app.status = 'REJECTED' 
         app.save()
         
-        # 2. Notify Client
+        # Notify Client
         if app.job.client_contact:
             Notification.objects.create(
                 user=app.job.client_contact,
@@ -586,7 +575,6 @@ def respond_offer(request, application_id, response):
 def candidate_negotiation(request, application_id):
     app = get_object_or_404(Application, pk=application_id)
     
-    # Security Check
     if app.candidate != request.user:
         messages.error(request, "Access Denied")
         return redirect('web_test:home')

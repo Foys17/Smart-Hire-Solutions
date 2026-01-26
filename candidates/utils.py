@@ -28,7 +28,7 @@ HARD_SKILLS_DB = {
 def get_local_models():
     """
     Retrieves the loaded models directly from jobs/apps.py.
-    This ensures we use the Single Source of Truth (Your Fine-Tuned Model).
+    This ensures we use the Single Source of Truth (my Fine-Tuned Model).
     """
     try:
         JobsConfig = apps.get_app_config('jobs')

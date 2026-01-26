@@ -16,7 +16,7 @@ def client_dashboard(request):
     if request.user.role != 'Client':
         return redirect('web_test:home')
 
-    # 1. Fetch Jobs with "Ready to Review" counts
+    # Fetch Jobs with "Ready to Review" counts
     my_jobs = Job.objects.filter(client_contact=request.user).annotate(
         ready_to_review_count=Count('applications', filter=Q(applications__status='CLIENT_REVIEW'))
     ).order_by('-created_at')
@@ -24,8 +24,7 @@ def client_dashboard(request):
     active_count = my_jobs.filter(status='OPEN').count()
     candidates_to_review = Application.objects.filter(job__in=my_jobs, status='CLIENT_REVIEW').count()
 
-    # 2. NEW: Fetch Upcoming Final Interviews
-    # We look for candidates in 'FINAL_INTERVIEW' stage with a set date in the future
+    # Fetch Upcoming Final Interviews
     upcoming_interviews = Application.objects.filter(
         job__client_contact=request.user,
         status='FINAL_INTERVIEW',
@@ -36,7 +35,7 @@ def client_dashboard(request):
         'jobs': my_jobs,
         'active_count': active_count,
         'review_count': candidates_to_review,
-        'upcoming_interviews': upcoming_interviews # <--- Passed to template
+        'upcoming_interviews': upcoming_interviews 
     }
     return render(request, 'client/dashboard.html', context)
 
@@ -44,15 +43,15 @@ def client_dashboard(request):
 def client_job_view(request, job_id):
     job = get_object_or_404(Job, id=job_id)
     
-    if request.user != job.client_contact:
+    if request.user != job.client_contact: #Client can only view their own job
         return redirect('web_test:client_dashboard')
 
-    # Fetch candidates including the new Negotiation statuses
+    # Fetch candidates 
     candidates = Application.objects.filter(
         job=job,
         status__in=[
             'CLIENT_REVIEW', 'FINAL_INTERVIEW', 
-            'NEGOTIATION', 'NEGOTIATION_SUBMITTED', # <--- Included these
+            'NEGOTIATION', 'NEGOTIATION_SUBMITTED', 
             'OFFER', 'HIRED', 'REJECTED'
         ]
     ).select_related('candidate').order_by('-match_score')
@@ -73,10 +72,10 @@ def client_decision(request, application_id, decision):
     if decision == 'approve':
         # Condition A: Job requires Final Interview -> Schedule it
         if app.job.client_does_final_interview and app.status == 'CLIENT_REVIEW':
-             return redirect('web_test:client_schedule_interview', application_id=app.id)
+            return redirect('web_test:client_schedule_interview', application_id=app.id)
 
         # Condition B: Ready for Offer/Negotiation (Final Interview Done OR Not Required)
-        # ACTION: Start Negotiation instead of sending blank Offer
+        # Start Negotiation instead of sending blank Offer
         app.status = 'NEGOTIATION'
         app.save()
 
@@ -84,7 +83,7 @@ def client_decision(request, application_id, decision):
         Notification.objects.create(
             user=app.candidate,
             message=f"Action Required: {app.job.client_contact.full_name} is interested! Please review salary & joining details.",
-            link=reverse('web_test:candidate_negotiation', args=[app.id]) # <--- Link to new view
+            link=reverse('web_test:candidate_negotiation', args=[app.id]) 
         )
         
         messages.success(request, f"Request sent to {app.candidate.full_name} to confirm Salary & Joining Date.")
@@ -123,7 +122,6 @@ def client_create_offer(request, application_id):
             messages.success(request, f"Offer sent to {app.candidate.full_name} successfully!")
             return redirect('web_test:client_job_view', job_id=app.job.id)
     else:
-        # PRE-FILL with Candidate's Negotiated Values if available
         salary_val = app.candidate_expected_salary if app.candidate_expected_salary else app.job.monthly_salary
         date_val = app.candidate_joining_date if app.candidate_joining_date else timezone.now().date()
         
@@ -137,7 +135,7 @@ def client_create_offer(request, application_id):
     return render(request, 'client/create_offer.html', {'form': form, 'app': app})
 
 @login_required
-def client_schedule_interview(request, application_id):
+def client_schedule_interview(request, application_id): #Client schedules final interview
     app = get_object_or_404(Application, id=application_id)
     
     if app.job.client_contact != request.user:
@@ -183,7 +181,7 @@ def client_schedule_interview(request, application_id):
     })
 
 @login_required
-def client_create_request(request):
+def client_create_request(request): #Client creates a new job request
     if request.user.role != 'Client':
         messages.error(request, "Access Denied")
         return redirect('web_test:home')
@@ -197,21 +195,17 @@ def client_create_request(request):
             job.status = 'REQUESTED' 
             job.save()
             
-            # --- START NEW CODE ---
-            # 1. Get the User model
             User = get_user_model()
             
-            # 2. Find all users with the role 'HR'
             hr_users = User.objects.filter(role='HR')
             
-            # 3. Create a notification for each HR user
+            #Create a notification for each HR user
             for hr in hr_users:
                 Notification.objects.create(
                     user=hr,
                     message=f"New Job Request from {request.user.full_name}: {job.title}",
                     link=reverse('web_test:hr_pending_requests')  # Directs HR to the pending requests page
                 )
-            # --- END NEW CODE ---
 
             messages.success(request, "Request submitted!")
             
@@ -220,7 +214,7 @@ def client_create_request(request):
             
             return redirect('web_test:client_dashboard')
         else:
-            # Error handling logic (keep your existing error handling here)
+            # Error handling logic 
             for error in form.non_field_errors():
                 messages.warning(request, f"⚠️ {error}") 
             for field_name, errors in form.errors.items():
@@ -237,17 +231,14 @@ def client_create_request(request):
 def client_edit_request(request, job_id):
     job = get_object_or_404(Job, id=job_id)
     
-    # Security Check
     if job.client_contact != request.user:
         messages.error(request, "Access Denied.")
         return redirect('web_test:client_dashboard')
         
-    # --- CHANGED LOGIC START ---
-    # Allow editing if status is REQUESTED OR OPEN
+        # Allow editing if status is REQUESTED OR OPEN
     if job.status not in ['REQUESTED', 'OPEN']:
         messages.error(request, "This job is closed and cannot be edited.")
         return redirect('web_test:client_dashboard')
-    # --- CHANGED LOGIC END ---
 
     if request.method == 'POST':
         form = ClientJobRequestForm(request.POST, request.FILES, instance=job)
@@ -268,7 +259,6 @@ def client_edit_request(request, job_id):
 def client_delete_request(request, job_id):
     job = get_object_or_404(Job, id=job_id)
     
-    # 1. Security Check
     if job.client_contact != request.user or job.status != 'REQUESTED':
         messages.error(request, "Cannot delete this job.")
         return redirect('web_test:client_dashboard')
@@ -284,7 +274,6 @@ def client_delete_request(request, job_id):
 def add_questions_view(request, job_id):
     job = get_object_or_404(Job, id=job_id)
     
-    # Security: Only the client owner can add questions
     if job.client_contact != request.user:
         messages.error(request, "Access Denied")
         return redirect('web_test:client_dashboard')
@@ -292,11 +281,10 @@ def add_questions_view(request, job_id):
     if request.method == 'POST':
         form = QuestionForm(request.POST)
         if form.is_valid():
-            # 1. Create Question instance but don't save yet
+            # Creating Question instance but not saving yet
             question = form.save(commit=False)
             question.job = job
             
-            # 2. Process the manual option fields into the JSON list
             data = form.cleaned_data
             question.choices = [
                 data['option_1'],
@@ -305,7 +293,6 @@ def add_questions_view(request, job_id):
                 data['option_4']
             ]
             
-            # 3. Save the correct index (0-3)
             question.correct_answer_index = int(data['correct_option'])
             question.save()
             
@@ -314,7 +301,6 @@ def add_questions_view(request, job_id):
     else:
         form = QuestionForm()
 
-    # Get existing questions to display in the list
     existing_questions = job.questions.all().order_by('created_at')
 
     return render(request, 'client/add_questions.html', {
@@ -328,7 +314,6 @@ def delete_question(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     job_id = question.job.id
     
-    # Security check
     if question.job.client_contact != request.user:
         messages.error(request, "Access Denied")
         return redirect('web_test:client_dashboard')
@@ -343,7 +328,6 @@ def client_edit_question(request, question_id):
     question = get_object_or_404(Question, id=question_id)
     job = question.job
     
-    # Security Check
     if job.client_contact != request.user:
         messages.error(request, "Access Denied")
         return redirect('web_test:client_dashboard')
@@ -382,5 +366,5 @@ def client_edit_question(request, question_id):
         'job': job,
         'form': form,
         'questions': job.questions.all(),
-        'editing': True # You can use this in template to change button text to "Update"
+        'editing': True 
     })

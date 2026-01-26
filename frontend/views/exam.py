@@ -13,13 +13,12 @@ def take_exam(request, application_id):
     app = get_object_or_404(Application, pk=application_id, candidate=request.user)
     job = app.job
 
-    # Security Checks
     if app.status not in ['SCREENING', 'PENDING_EXAM']:
         messages.warning(request, "You have already completed this step or cannot access it now.")
         return redirect('web_test:home')
 
     if request.method == 'POST':
-        # --- GRADING LOGIC ---
+        #GRADING LOGIC
         questions = job.questions.all()
         total_questions = questions.count()
         correct_answers = 0
@@ -39,7 +38,6 @@ def take_exam(request, application_id):
         
         is_passed = score_percent >= job.exam_passing_score
 
-        # 1. Save Attempt
         ExamAttempt.objects.create(
             job=job,
             candidate=request.user,
@@ -47,19 +45,19 @@ def take_exam(request, application_id):
             passed=is_passed
         )
 
-        # 2. Update Application Status & Score
+        # Update Application Status & Score
         app.exam_score = score_percent
         
         if is_passed:
             app.status = 'INTERVIEW'
             app.save()
             
-            # --- TRIGGER AI SCORING ---
+            # TRIGGER AI SCORING
             # Now that the candidate has passed the gatekeeper exam, 
             # we run the AI pipeline to extract skills and calculate the CV match score.
             process_application(app) 
             
-            # --- NOTIFY CANDIDATE ---
+            # NOTIFY CANDIDATE 
             Notification.objects.create(
                 user=request.user,
                 message=f"🎉 You passed the screening exam with {score_percent:.0f}%! HR will contact you shortly.",

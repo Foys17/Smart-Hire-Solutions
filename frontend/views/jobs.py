@@ -24,12 +24,13 @@ def job_list(request):
             Q(description_text__icontains=query)
         )
     
-    if client_id:
+    if client_id: 
         jobs = jobs.filter(client_contact_id=client_id)
     
     jobs = jobs.order_by('client_contact__full_name', '-created_at')
 
     User = get_user_model()
+    #Fetch clients for filter dropdown
     clients = User.objects.filter(
         role='Client', 
         client_jobs__status='OPEN' 
@@ -127,7 +128,7 @@ def delete_job(request, pk):
     return render(request, 'delete_job_confirm.html', {'job': job})
 
 @login_required
-def toggle_job_status(request, pk):
+def toggle_job_status(request, pk):  #Open / Close job
     job = get_object_or_404(Job, pk=pk)
     
     if request.user.role != 'HR':
@@ -147,7 +148,7 @@ def toggle_job_status(request, pk):
 
 
 @login_required
-def hr_pending_requests(request):
+def hr_pending_requests(request):  #HR sees client job requests
     if request.user.role not in ['HR', 'Admin']:
         return redirect('web_test:home')
         
@@ -208,14 +209,12 @@ def hr_schedule_interview(request):
         messages.error(request, "Access Denied")
         return redirect('web_test:home')
 
-    # Initialize defaults to prevent UnboundLocalError on GET or invalid POST
     apps = Application.objects.none()
     single_app = None
 
     if request.method == 'POST':
         form = InterviewInviteForm(request.POST)
         if form.is_valid():
-            # 1. Parse Data
             app_ids = form.cleaned_data['application_ids'].split(',')
             reviewer = form.cleaned_data['reviewer']
             date = form.cleaned_data['date']
@@ -223,24 +222,21 @@ def hr_schedule_interview(request):
             location = form.cleaned_data['location']
             message = form.cleaned_data['message']
 
-            # 2. Get Applications
             applications = Application.objects.filter(id__in=app_ids)
             count = applications.count()
 
-            # 3. Bulk Update & Notifications
+            #Bulk Update & Notifications
             for app in applications:
                 # Update Status & Reviewer
                 app.status = 'INTERVIEW'
                 app.assigned_reviewer = reviewer
                 
-                # --- FIX 1: Save ALL details to the database ---
                 app.interview_date = f"{date} {time}" 
-                app.interview_location = location  # <--- Was missing
-                app.interview_note = message       # <--- Was missing
+                app.interview_location = location  
+                app.interview_note = message       
                 app.save()
 
                 # A. Notify Candidate (Dashboard)
-                # --- FIX 2: Redirect to Candidate Status Page (using job.id) ---
                 Notification.objects.create(
                     user=app.candidate,
                     message=f"Interview Scheduled! Date: {date} at {time}. Check details.",
